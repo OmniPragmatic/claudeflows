@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>ClaudeFlows — Elephant + Goldfish workflows for Claude Code</title>
+  <meta name="description" content="A Claude Code plugin that pairs your full-context session with fresh, blind subagents to stress-test ideas, designs, bugs, and diffs." />
+  <meta property="og:title" content="ClaudeFlows" />
+  <meta property="og:description" content="Six slash commands for Claude Code that turn rough ideas into reviewed code — with blind subagents stress-testing every step." />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="topnav">
+    <div class="container topnav-inner">
+      <a class="brand-mark" href="#top">claude<span>flows</span></a>
+      <div class="topnav-right">
+        <a href="#commands">Commands</a>
+        <a href="#pipeline">Pipeline</a>
+        <a href="https://github.com/omniprag/claudeflows" target="_blank" rel="noopener">GitHub</a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle color theme">Theme</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <section class="hero no-rule">
+      <div class="container">
+        <img class="hero-logo" src="assets/logo.png" alt="ClaudeFlows logo" />
+        <h1>Two minds. <span>One workflow.</span></h1>
+        <p class="lede">
+          ClaudeFlows is a Claude Code plugin. It pairs your full-context session — the
+          <em>Elephant</em> — with fresh, blind subagents — <em>Goldfish</em> — to stress-test ideas,
+          designs, bugs, and diffs before any code ships.
+        </p>
+        <div class="install">
+          <code class="install-code" id="installCmd">/plugin marketplace add omniprag/claudeflows</code>
+          <button class="copy-btn" id="copyBtn" type="button">Copy</button>
+        </div>
+        <p class="install-note">Run inside the Claude CLI. Six <code>/cf-</code> commands light up.</p>
+      </div>
+    </section>
+
+    <section id="idea">
+      <div class="container">
+        <h2>The idea, in two cards</h2>
+        <p class="section-lede">
+          Borrowed from Dave Rensin's
+          <a href="https://drensin.medium.com/elephants-goldfish-and-the-new-golden-age-of-software-engineering-c33641a48874" target="_blank" rel="noopener">
+            "Elephants, Goldfish, and the New Golden Age of Software Engineering"</a>.
+          The trick is asymmetry: if a Goldfish that can't read your mind still reaches the same conclusion,
+          the doc is real. If it can't, the doc is wrong — not the Goldfish.
+        </p>
+        <div class="concepts">
+          <div class="concept">
+            <h3>Elephant <span class="tag">memory</span></h3>
+            <p>
+              Your Claude Code session. It's read every file you opened, remembers every decision,
+              knows what you actually want. Great at synthesis. Sometimes too close to the work to
+              notice it has a hole.
+            </p>
+          </div>
+          <div class="concept">
+            <h3>Goldfish <span class="tag">no memory</span></h3>
+            <p>
+              A fresh subagent with zero context except what you hand it. It can't be biased by the
+              conversation, because it never saw the conversation. That's the point — it's the
+              cold reader your design doc actually has to convince.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pipeline">
+      <div class="container">
+        <h2>The pipeline</h2>
+        <p class="section-lede">
+          Each stage feeds the next, but you don't have to start at the top. Pick the stage that matches
+          what you have in your head right now.
+        </p>
+        <div class="diagram">
+          <pre class="mermaid">
+flowchart LR
+    R(["rough idea"]) --> A["brainstorm"]
+    A -- concept --> B["prd"]
+    B -- PRD --> C["feature"]
+    BG(["bug, issue, repro"]) --> D["bug"]
+    C -- code change --> E["precommit-review"]
+    D -- code change --> E
+    E -- validated change --> F(["commit"])
+          </pre>
+        </div>
+        <div class="usage-grid">
+          <div class="usage-item"><div class="when">A question, not a task</div><code>/cf-question</code></div>
+          <div class="usage-item"><div class="when">A half-formed thought</div><code>/cf-brainstorm</code></div>
+          <div class="usage-item"><div class="when">A direction, no requirements yet</div><code>/cf-prd</code></div>
+          <div class="usage-item"><div class="when">A clear feature to build</div><code>/cf-feature</code></div>
+          <div class="usage-item"><div class="when">A bug or a #issue</div><code>/cf-bug</code></div>
+          <div class="usage-item"><div class="when">A diff already in hand</div><code>/cf-precommit-review</code></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="commands">
+      <div class="container">
+        <h2>The six commands</h2>
+        <p class="section-lede">
+          Each command is a different Elephant↔Goldfish dance. Same primitives, different choreography.
+        </p>
+
+        <div class="commands">
+
+          <article class="command">
+            <div class="command-head">
+              <h3>/cf-question</h3>
+              <span class="tagline">a fast, cited answer — read-only</span>
+            </div>
+            <p>
+              You have a question, not a task. ClaudeFlows splits it into 2–3 narrow lanes, runs a
+              Goldfish on each in parallel, and synthesizes the answer into under 250 words with sources.
+              No clarifying prompts. Nothing on disk changes.
+            </p>
+            <pre class="mermaid">
+flowchart LR
+    Q(["your question"]) --> E["Elephant<br/>classifies"]
+    E --> G1["Goldfish · Lane 1"]
+    E --> G2["Goldfish · Lane 2"]
+    E -.optional.-> G3["Goldfish · Lane 3"]
+    G1 --> S["synthesize"]
+    G2 --> S
+    G3 -.-> S
+    S --> A(["≤250-word cited answer"])
+            </pre>
+          </article>
+
+          <article class="command">
+            <div class="command-head">
+              <h3>/cf-brainstorm</h3>
+              <span class="tagline">divergent ideas → ranked picks</span>
+            </div>
+            <p>
+              You have a rough thought and want options. Multiple Goldfish run in parallel, each through
+              a different lens — technical, business, UX, contrarian. Their lack of shared context is the
+              feature: it's what makes them disagree. The Elephant clusters the output into a brief.
+            </p>
+            <pre class="mermaid">
+flowchart LR
+    I(["rough idea"]) --> SEED["Elephant<br/>frames the seed"]
+    SEED --> T["Goldfish · Technical"]
+    SEED --> B["Goldfish · Business"]
+    SEED --> U["Goldfish · UX"]
+    SEED --> C["Goldfish · Contrarian"]
+    T --> X["cluster &amp; rank"]
+    B --> X
+    U --> X
+    C --> X
+    X --> O(["concepts brief"])
+            </pre>
+          </article>
+
+          <article class="command">
+            <div class="command-head">
+              <h3>/cf-prd</h3>
+              <span class="tagline">idea → grounded PRD</span>
+            </div>
+            <p>
+              You have a direction and need real requirements. Wave 1 grounds the idea in your existing
+              codebase. You answer a few targeted gap questions. Wave 2 sends Goldfish out across market,
+              technical, and UX/compliance lenses. The Elephant writes the PRD, with anything you deferred
+              spelled out as Open Questions.
+            </p>
+            <pre class="mermaid">
+flowchart LR
+    I(["idea or #issue"]) --> W1["Wave 1<br/>codebase grounding"]
+    W1 --> GAPS["gap Q&amp;A<br/>with you"]
+    GAPS --> W2["Wave 2<br/>research lenses"]
+    W2 --> P(["PRD<br/>+ Open Questions"])
+            </pre>
+          </article>
+
+          <article class="command">
+            <div class="command-head">
+              <h3>/cf-feature</h3>
+              <span class="tagline">design doc → reviewed code</span>
+            </div>
+            <p>
+              You know what to build. The Elephant drafts a design doc — no code yet. Three Goldfish
+              read it cold: one for comprehension, one to find gaps, one to check it could ship in a
+              single pass. The implementation gate stays closed until critic and readiness both sign off.
+              Then the diff goes through review.
+            </p>
+            <pre class="mermaid">
+flowchart LR
+    F(["feature / #issue"]) --> D["design doc"]
+    D --> P1["Goldfish · Comprehension"]
+    D --> P2["Goldfish · Critic"]
+    D --> P3["Goldfish · Readiness"]
+    P1 --> G{"gate"}
+    P2 --> G
+    P3 --> G
+    G -- gaps --> D
+    G -- ready --> IMPL["implement"]
+    IMPL --> PR["/cf-precommit-review"]
+    PR --> OUT(["reviewed code"])
+            </pre>
+          </article>
+
+          <article class="command">
+            <div class="command-head">
+              <h3>/cf-bug</h3>
+              <span class="tagline">symptom → failing test → fix</span>
+            </div>
+            <p>
+              A Goldfish diagnoses the bug from only the symptom and repro — never your hypothesis. If
+              it lands on the same root cause, that's confidence. If it lands somewhere else, that's
+              signal worth chasing. Either way, the bug becomes a failing test before any fix is written.
+            </p>
+            <pre class="mermaid">
+flowchart LR
+    B(["bug / #issue"]) --> H["Elephant<br/>hidden hypothesis"]
+    B --> GD["Goldfish · Diagnose<br/>(symptom only)"]
+    H --> CMP{"compare"}
+    GD --> CMP
+    CMP --> T["write failing test"]
+    T --> FIX["smallest fix → green"]
+    FIX --> PR["/cf-precommit-review"]
+    PR --> OUT(["reviewed fix"])
+            </pre>
+          </article>
+
+          <article class="command">
+            <div class="command-head">
+              <h3>/cf-precommit-review</h3>
+              <span class="tagline">a blind reviewer on your diff</span>
+            </div>
+            <p>
+              The reviewer is itself a Goldfish — it sees the diff, not the conversation, not what you
+              were trying to do. Findings get fixed or rebutted verbatim, never silently dismissed. The
+              loop runs until clean, with a hard cap of five rounds before it asks you what to do.
+            </p>
+            <pre class="mermaid">
+flowchart LR
+    D(["your diff"]) --> PF["pre-flight<br/>lint · types · tests"]
+    PF --> R["Goldfish · Reviewer<br/>(blind)"]
+    R --> F{"findings?"}
+    F -- yes --> TR["fix or rebut verbatim"]
+    TR --> R
+    F -- no --> OUT(["cleared diff"])
+            </pre>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <section id="stack">
+      <div class="container">
+        <h2>Stack-agnostic by design</h2>
+        <p class="section-lede">
+          Every invocation reads your repo's manifests, version managers, and CI config, then picks the
+          right lint, typecheck, and test commands. No install-time configuration. Tested on Rails,
+          Flutter, Node + Vite + Cloudflare Workers, Python (Django / FastAPI), and Go.
+        </p>
+      </div>
+    </section>
+
+    <section id="install">
+      <div class="container">
+        <h2>Install</h2>
+        <p class="section-lede">
+          Open the Claude CLI in your terminal and run:
+        </p>
+        <pre>/plugin marketplace add omniprag/claudeflows</pre>
+        <p class="install-note" style="margin-top:16px;">
+          If your Claude shows "/plugin isn't available in this environment," run Claude CLI from the
+          terminal and add the plugin. Reload skills and restart Claude Desktop or the VS Code
+          extension. The six <code>/cf-</code> commands should appear.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <span>MIT licensed.</span>
+      <span>
+        <a href="https://github.com/omniprag/claudeflows" target="_blank" rel="noopener">github.com/omniprag/claudeflows</a>
+      </span>
+    </div>
+  </footer>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+    function resolvedTheme() {
+      const stored = localStorage.getItem('claudeflows:theme') || 'auto';
+      if (stored === 'light') return 'light';
+      if (stored === 'dark') return 'dark';
+      return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function applyTheme(mode) {
+      document.documentElement.setAttribute('data-theme', mode);
+      localStorage.setItem('claudeflows:theme', mode);
+    }
+
+    function mermaidConfig() {
+      const dark = resolvedTheme() === 'dark';
+      return {
+        startOnLoad: false,
+        theme: 'base',
+        securityLevel: 'strict',
+        fontFamily: 'Lexend, ui-sans-serif, system-ui, sans-serif',
+        themeVariables: dark ? {
+          background: '#353535',
+          primaryColor: '#494949',
+          primaryTextColor: '#e2e2e2',
+          primaryBorderColor: '#6dcfc0',
+          secondaryColor: '#353535',
+          tertiaryColor: '#242424',
+          lineColor: '#6dcfc0',
+          textColor: '#e2e2e2',
+          mainBkg: '#494949',
+          nodeBorder: '#6dcfc0',
+          clusterBkg: '#353535',
+          edgeLabelBackground: '#353535'
+        } : {
+          background: '#ffffff',
+          primaryColor: '#ffffff',
+          primaryTextColor: '#000000',
+          primaryBorderColor: '#0c7864',
+          secondaryColor: '#e2e2e2',
+          tertiaryColor: '#ffffff',
+          lineColor: '#0c7864',
+          textColor: '#000000',
+          mainBkg: '#ffffff',
+          nodeBorder: '#0c7864',
+          clusterBkg: '#e2e2e2',
+          edgeLabelBackground: '#ffffff'
+        }
+      };
+    }
+
+    let originals = null;
+    async function renderAll() {
+      const blocks = document.querySelectorAll('pre.mermaid');
+      if (!originals) {
+        originals = Array.from(blocks).map(b => b.textContent);
+      } else {
+        blocks.forEach((b, i) => { b.textContent = originals[i]; b.removeAttribute('data-processed'); });
+      }
+      mermaid.initialize(mermaidConfig());
+      await mermaid.run({ nodes: blocks });
+    }
+
+    // Initial theme application before render
+    const initial = localStorage.getItem('claudeflows:theme') || 'auto';
+    document.documentElement.setAttribute('data-theme', initial);
+
+    renderAll();
+
+    // Theme toggle: cycles auto → light → dark → auto
+    const btn = document.getElementById('themeToggle');
+    function labelFor(mode) {
+      return mode === 'auto' ? 'Theme · auto' : (mode === 'light' ? 'Theme · light' : 'Theme · dark');
+    }
+    btn.textContent = labelFor(initial);
+    btn.addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme') || 'auto';
+      const next = cur === 'auto' ? 'light' : (cur === 'light' ? 'dark' : 'auto');
+      applyTheme(next);
+      btn.textContent = labelFor(next);
+      renderAll();
+    });
+
+    // Re-render mermaid when system theme flips while in auto
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if ((document.documentElement.getAttribute('data-theme') || 'auto') === 'auto') {
+        renderAll();
+      }
+    });
+
+    // Copy install command
+    const copyBtn = document.getElementById('copyBtn');
+    const installCmd = document.getElementById('installCmd');
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(installCmd.textContent.trim());
+        const prev = copyBtn.textContent;
+        copyBtn.textContent = 'Copied';
+        setTimeout(() => { copyBtn.textContent = prev; }, 1500);
+      } catch (e) {
+        const range = document.createRange();
+        range.selectNode(installCmd);
+        getSelection().removeAllRanges();
+        getSelection().addRange(range);
+      }
+    });
+  </script>
+
+</body>
+</html>
