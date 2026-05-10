@@ -90,6 +90,44 @@ Pick the stage that matches what you have:
 
 Each skill structures a different Elephant↔Goldfish dance. The diagrams below show the message flow. The **Elephant** is your Claude Code session — full context, institutional memory. A **Goldfish** is a fresh subagent spawned with no shared context, receiving only what the Elephant hands it. The **user** is you, kept in the loop via `AskUserQuestion` at decision points.
 
+### `question`
+
+**The lite form.** 2-3 Goldfish run in **parallel** on narrow lanes — selected by the question's shape (codebase / conceptual / decision / mixed). Each is capped at a few cited bullets. The Elephant synthesizes a tight, sub-250-word answer. **No clarifying prompts** to the user (ambiguity gets a one-line "Reading this as: …"), no second wave, no contrarian sweep, **no file changes**. Optimized for fast lookups and "should I A or B?" calls — not for artifacts.
+
+**Output:** a direct answer with key points, sources (`path:line` or URL), an optional disagreement note, and — for decision shapes — a one-line recommendation. Read-only by construction.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant E as Elephant
+    participant G1 as Goldfish (Lane 1)
+    participant G2 as Goldfish (Lane 2)
+    participant G3 as Goldfish (Lane 3)
+
+    U->>E: question
+    Note over E: Silent classify:<br/>codebase / conceptual / decision / mixed<br/>(picks lenses + web on/off)
+
+    par Narrow lanes (parallel, read-only)
+        E->>G1: question + Lane 1 (e.g. locator / primary / option A)
+        E->>G2: question + Lane 2 (e.g. explainer / counterpoint / option B)
+        opt Decision or Mixed shape
+            E->>G3: question + Lane 3 (pragmatist / synthesist)
+        end
+    end
+    G1-->>E: 3-8 cited bullets (answer ready)
+    G2-->>E: 3-8 cited bullets (answer ready)
+    opt Lane 3 was spawned
+        G3-->>E: 3-8 cited bullets (answer ready)
+    end
+
+    E->>E: synthesize — lead with conclusion,<br/>cite sources, flag disagreements
+    E->>U: ANSWER (≤250 words, ≤400 for decisions)
+    Note over E: STOP — no follow-up prompts,<br/>no save, no edits
+```
+
+---
+
 ### `brainstorm`
 
 **Inverts the pattern.** Multiple Goldfish run in **parallel**, each on a different lens (technical, business, UX, contrarian, market research). Their lack of shared context is what makes them generate divergent ideas. The Elephant synthesizes the divergent output into a concepts brief and helps the user converge on a direction.
