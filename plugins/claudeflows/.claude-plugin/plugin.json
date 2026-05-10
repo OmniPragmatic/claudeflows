@@ -1,0 +1,21 @@
+{
+  "name": "claudeflows",
+  "description": "Five-stage workflow for software work with Claude Code, built around the Editor/Probe pattern: a fresh subagent (the Probe) stress-tests a problem doc, design doc, or diff while your context-rich session (the Editor) stays in the loop. Stages: brainstorm → PRD → bug / feature → precommit-review.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Vladyslav Shvedov",
+    "url": "https://github.com/vshvedov"
+  },
+  "repository": "https://github.com/omniprag/claudeflows",
+  "homepage": "https://github.com/omniprag/claudeflows",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "code-review",
+    "prd",
+    "brainstorm",
+    "agent",
+    "subagent",
+    "claudeflows"
+  ]
+}

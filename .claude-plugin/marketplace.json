@@ -1,0 +1,30 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "OmniPrag",
+  "description": "Personal marketplace for Claude Code workflow plugins by Vladyslav Shvedov.",
+  "owner": {
+    "name": "Vladyslav Shvedov"
+  },
+  "plugins": [
+    {
+      "name": "claudeflows",
+      "description": "Five-stage Editor/Probe workflow for software work in Claude Code: brainstorm, PRD, bug, feature, precommit-review.",
+      "author": {
+        "name": "Vladyslav Shvedov",
+        "url": "https://github.com/vshvedov"
+      },
+      "category": "workflow",
+      "source": "./plugins/claudeflows",
+      "homepage": "https://github.com/omniprag/claudeflows",
+      "keywords": [
+        "workflow",
+        "code-review",
+        "prd",
+        "brainstorm",
+        "agent",
+        "subagent",
+        "claudeflows"
+      ]
+    }
+  ]
+}
