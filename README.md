@@ -25,7 +25,7 @@ ClaudeFlows uses the article's two roles:
 /plugin marketplace add omniprag/claudeflows
 ```
 
-> Note: `/plugin` runs inside a Claude Code session. If your terminal says "/plugin isn't available in this environment," start `claude` first, then paste the commands at the prompt.
+> If your Claude shows "/plugin isn't available in this environment," run Claude CLI from the terminal and add the plugin. Reload skills and restart Claude Desktop app or VSCode addon, and `cf-` commands should become available.
 
 Six slash commands become available, all prefixed `/cf-`:
 
