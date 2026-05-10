@@ -1,5 +1,8 @@
 # ClaudeFlows: Claude Code plugin
 
+<img width="1280" height="640" alt="ClaudeFlow-logo" src="https://github.com/user-attachments/assets/85c27ee8-87ba-4cbc-8e3e-05e6e75129f0" />
+
+
 A collection of reusable workflows for software development and architecturing.
 
 ## Overview
