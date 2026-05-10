@@ -22,10 +22,11 @@ ClaudeFlows uses the article's two roles: **Elephant** and **Goldfish**.
 
 > Note: `/plugin` runs inside a Claude Code session. If your terminal says "/plugin isn't available in this environment," start `claude` first, then paste the commands at the prompt.
 
-Five slash commands become available, all prefixed `/cf-`:
+Six slash commands become available, all prefixed `/cf-`:
 
 | Skill | When to use |
 |---|---|
+| `/cf-question <question>` | Fast read-only answer. 2-3 Goldfish run in parallel on narrow lanes; the Elephant synthesizes a tight, cited reply. No clarifying prompts, no file changes. |
 | `/cf-brainstorm <rough idea>` | Early-stage concept design. Multiple Goldfish run in parallel with different lenses (technical / business / UX / contrarian / market research). Output: a concepts brief. |
 | `/cf-prd <idea \| feature \| #issue>` | Turn an idea into a Product Requirements Document. Codebase grounding, structured gap-filling, deep research. Output: a PRD with explicit Open Questions. |
 | `/cf-bug <description \| #issue \| URL>` | Bug fix flow. Problem doc → Goldfish diagnosis check → failing test → fix → precommit review → test gate. |
@@ -37,6 +38,7 @@ Implementation skills (`bug`, `feature`) stop short of committing. You authorize
 Usage examples:
 
 ```sh
+/cf-question "where do we handle webhook retries?"
 /cf-bug gh issue 42
 /cf-feature gh issue 67
 /cf-precommit-review
@@ -63,6 +65,7 @@ Pick the stage that matches what you have:
 
 | You have | Start with | The output |
 |---|---|---|
+| A question, not a task | `question` | A fast, cited answer. Read-only — nothing changes. |
 | A half-formed thought, no direction yet | `brainstorm` | A concepts brief; pick a direction. |
 | A direction but no requirements | `prd` | A PRD: scope, users, metrics, open questions. |
 | A clear feature to build | `feature` | Implemented + reviewed code, ready to commit. |
@@ -71,6 +74,7 @@ Pick the stage that matches what you have:
 
 ## How each skill uses the pattern
 
+- **`question`** is the lite form. 2-3 Goldfish run in parallel on narrow lanes (locator / explainer, primary / counterpoint, A / B / pragmatist), each capped to a few cited bullets. The Elephant synthesizes a sub-250-word answer. No clarifying questions to the user, no file changes.
 - **`brainstorm`** inverts the pattern. Multiple Goldfish run in parallel, each with a different lens, free to web-search. The Elephant synthesizes the divergent ideas into a concepts brief. All clarifying questions go through `AskUserQuestion`.
 - **`prd`** uses two waves: exploration Goldfish ground the request in the existing codebase, then research Goldfish run in parallel across distinct lenses (web search, optional Chrome MCP for logged-in sources). The Elephant synthesizes a PRD with explicit Open Questions for whatever the user deferred.
 - **`feature`** uses **three** Goldfish per round: comprehension (does the doc read cleanly to a cold reader?), critic (where does the design break?), readiness (could a first-pass implementer ship this without follow-up questions?). A no-code gate holds until critic AND readiness sign off; comprehension is informational. Round 2+ skips comprehension.
