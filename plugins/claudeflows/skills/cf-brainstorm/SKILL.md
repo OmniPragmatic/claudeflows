@@ -223,7 +223,11 @@ If **Another round, tighter framing**: capture the user's refinements in chat, u
 
 If **Another round, different lenses**: present the lens kit (Step 2's list) via `AskUserQuestion` with `multiSelect: true` and let the user pick. Re-run from Step 2 with the new selection.
 
-If **Save brief and stop**: write the concepts brief to a working-notes location in the repo (prefer `docs/claudeflows:brainstorms/<slug>-<YYYY-MM-DD>.md` if `docs/` exists, otherwise `notes/claudeflows:brainstorms/<slug>-<YYYY-MM-DD>.md`, otherwise `.brainstorms/<slug>-<YYYY-MM-DD>.md` and add it to .gitignore) ONLY if the user confirms via one more `AskUserQuestion`:
+If **Save brief and stop**: write the concepts brief to a working-notes location in the repo ONLY if the user confirms via the `AskUserQuestion` below. Detect the path in this order:
+
+1. `docs/claudeflows-brainstorms/<slug>-<YYYY-MM-DD>.md` — if `docs/` exists.
+2. `notes/claudeflows-brainstorms/<slug>-<YYYY-MM-DD>.md` — if `notes/` exists.
+3. `.brainstorms/<slug>-<YYYY-MM-DD>.md` — fallback; add it to `.gitignore`.
 
 **Q8 — Save location:**
 - `question`: "Where should I save the brief?"

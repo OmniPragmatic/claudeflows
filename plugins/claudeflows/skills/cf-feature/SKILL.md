@@ -29,7 +29,8 @@ Required sections:
 DESIGN DOC
 - Why: <user problem this solves; cite GH issue, conversation, or PRD section>
 - Scope: <what is in; what is explicitly out>
-- Surfaces touched: <files / routes / models / controllers / components / DB tables / external services>
+- Alternatives considered: <2-4 designs you considered and rejected, each with a one-sentence reason. Post-hoc rationalization of the chosen design — not a parallel design exercise. If only one approach is viable, say so explicitly with the constraint that ruled out others.>
+- Surfaces touched: <enumerate every file / route / model / controller / component / DB table / external service that will be created, edited, or deleted. File paths, not just layer names. Group by layer if many.>
 - Interfaces: <component props, function signatures, API request/response shapes, DB columns, queue arguments>
 - UX flow: <click-by-click for UI; request-by-request for backend>
 Append stack-specific fields where they apply: multi-tenant scoping, CanCanCan abilities, COEP/COOP headers and SharedArrayBuffer requirements, BLoC / stream lifecycle, schema migration version bump, authorization rules, rate limits, or any field the design needs that's specific to the detected stack.
@@ -94,6 +95,8 @@ DESIGN DOC:
 <<<DESIGN_START>>>
 You are a fresh reviewer with no prior context. Below is a design doc for a feature in the this repo (project name and stack derived from CLAUDE.md / README / manifests) repo (CLAUDE.md at the repo root has the architecture, including any architectural invariants documented in CLAUDE.md (multi-tenancy, lifecycle, schema migrations, real-time / audio constraints, etc.)).
 
+Before you start: you are not here to validate the doc. Look for what is wrong, missing, or under-specified before you look for what is right. If the doc seems fine, that is a signal to look harder, not a signal to pass it. Sycophancy is the failure mode; rigor is the job.
+
 Your job: read the design doc, then read the surfaces it claims to touch, and find holes BEFORE implementation starts. Specifically:
 
 - Is the scope crisp? What questions would you have to answer to implement this that the doc does not answer?
@@ -124,6 +127,8 @@ Output: numbered list of gaps, with file:line citations where applicable. End wi
 ```
 <<<READINESS_START>>>
 You are a fresh implementer with no prior context. Below is a design doc for a feature in the this repo (project name and stack derived from CLAUDE.md / README / manifests) repo. Imagine you've been told: "Implement this. First pass. No follow-up questions allowed." Could you?
+
+Before you start: you are not here to validate the doc. Look for what is wrong, missing, or under-specified before you look for what is right. If the doc seems fine, that is a signal to look harder, not a signal to pass it. Sycophancy is the failure mode; rigor is the job.
 
 For every interface, file path, function signature, API request/response shape, DB column, queue argument, component prop, message type, and verification criterion the doc claims, ask:
 - Could I write the corresponding code without asking the author anything?
