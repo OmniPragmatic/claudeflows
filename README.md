@@ -9,9 +9,11 @@ A collection of reusable workflows for software development and architecting.
 
 > **Lineage:** The pattern comes from Dave Rensin's article ["Elephants, Goldfish, and the New Golden Age of Software Engineering"](https://drensin.medium.com/elephants-goldfish-and-the-new-golden-age-of-software-engineering-c33641a48874). 
 
-ClaudeFlows uses the article's two roles: **Elephant** and **Goldfish**.
+ClaudeFlows uses the article's two roles:
 
-> The **Elephant** is your working session. Claude Code with full context: the conversation, CLAUDE.md, recent file reads, decisions already made. The **Goldfish** is a fresh subagent with no prior context that stress-tests a problem doc, a design doc, or a diff. The asymmetry is the test: a Goldfish that can't reach the same conclusion from the doc alone tells you the doc is wrong, not the Goldfish.
+- The **Elephant** (memory) is your working session. Claude Code with full context: the conversation, CLAUDE.md, recent file reads, decisions already made.
+
+- The **Goldfish** (no memory) is a fresh subagent with no prior context that stress-tests a problem doc, a design doc, or a diff. The asymmetry is the test: a Goldfish that can't reach the same conclusion from the doc alone tells you the doc is wrong, not the Goldfish.
 
 ## Install
 
