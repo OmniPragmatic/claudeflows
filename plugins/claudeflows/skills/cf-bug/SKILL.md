@@ -1,17 +1,17 @@
 ---
-name: bug
-description: Fix a bug using the Editor/Probe workflow — problem doc, Probe diagnosis check, failing test, fix, review, validate
+name: cf-bug
+description: Fix a bug using the Elephant/Goldfish workflow — problem doc, Goldfish diagnosis check, failing test, fix, review, validate
 argument-hint: bug description, GitHub issue URL, or symptom + repro
 disable-model-invocation: true
 ---
 
-Fix a bug using the Editor/Probe workflow. The aim: write a problem doc, Probe-check the diagnosis (so we are not anchored to the first hypothesis), capture the bug as a failing test, fix it, then run `/claudeflows:precommit-review` and the test gate.
+Fix a bug using the Elephant/Goldfish workflow. The aim: write a problem doc, Goldfish-check the diagnosis (so we are not anchored to the first hypothesis), capture the bug as a failing test, fix it, then run `/cf-precommit-review` and the test gate.
 
 `$ARGUMENTS` is the bug description provided by the user. If empty, ask for one before doing anything. If `$ARGUMENTS` is a GitHub issue URL or `#<number>`, fetch it first with `gh issue view <number> --json title,body,labels,comments` and seed the problem doc from it.
 
 ## Step 0: Triviality gate
 
-**Skip the Probe/test ceremony for:** typo fixes in copy or comments, dead-code removal, version bumps, formatter-only diffs, single-line config tweaks. Go straight to Step 5 (`/claudeflows:precommit-review`) and the test gate.
+**Skip the Goldfish/test ceremony for:** typo fixes in copy or comments, dead-code removal, version bumps, formatter-only diffs, single-line config tweaks. Go straight to Step 5 (`/cf-precommit-review`) and the test gate.
 
 **Run the full loop for everything else,** including small one-line code fixes — small diffs hide bugs disproportionately well.
 
@@ -29,7 +29,7 @@ PROBLEM DOC
 - "Fixed" means: <specific test passes / specific behavior / specific output>
 ```
 
-If the user gave no repro and the bug is not obvious from a single file read, **stop and ask** for a repro path (URL, steps, failing test name, log line, screenshot). Do NOT guess. The Probe needs something concrete to act on.
+If the user gave no repro and the bug is not obvious from a single file read, **stop and ask** for a repro path (URL, steps, failing test name, log line, screenshot). Do NOT guess. The Goldfish needs something concrete to act on.
 
 **Browser / simulator validation.** Choose by the detected stack:
 
@@ -37,13 +37,13 @@ If the user gave no repro and the bug is not obvious from a single file read, **
 - **Mobile** (Flutter `pubspec.yaml`, native iOS / Android): run on a simulator (`flutter run -d <device>`, `xcrun simctl`, `adb`) and capture screenshots / device logs. For layout-only bugs that reproduce on web, `flutter run -d chrome` plus Chrome MCP works.
 - **Backend-only**: skip browser validation. Repro is usually a `curl` against the local server, a failing test name, or a log line.
 
-## Step 2: Probe diagnosis check (parallel to your hypothesis)
+## Step 2: Goldfish diagnosis check (parallel to your hypothesis)
 
 Spawn a fresh agent with `Agent` tool:
 - `subagent_type: "Explore"` for narrow lookups, `"general-purpose"` if the bug spans multiple subsystems. If the harness does not have `Explore` registered, fall back to `general-purpose`.
-- `description: "Probe bug diagnosis"`
+- `description: "Goldfish bug diagnosis"`
 
-The Probe gets ONLY the symptom + repro from Step 1. It does NOT get your hypothesised root cause — that asymmetry is the point.
+The Goldfish gets ONLY the symptom + repro from Step 1. It does NOT get your hypothesised root cause — that asymmetry is the point.
 
 **Prompt body to send (between markers, exclusive):**
 
@@ -57,18 +57,18 @@ Repro: <FILL IN from Step 1>
 Investigate. Where in the codebase is the bug most likely to live? Cite specific file:line locations. List the top 1-3 candidate root causes ranked by likelihood. For each candidate, name what evidence in the code supports it and what would falsify it. Do NOT propose a fix yet — just diagnose.
 
 If a UI repro is needed, you may use the Chrome MCP (`mcp__Claude_in_Chrome__*`) against the running dev server, or run on a simulator for mobile. Backend-only repos: skip browser validation.."
-- For mobile: omit this note; the Probe reads code, not simulators.
+- For mobile: omit this note; the Goldfish reads code, not simulators.
 - For backend-only: omit.]
 
 End with the literal string `diagnosis complete`.
 <<<DIAG_END>>>
 ```
 
-**Compare Probe output to your Step 1 hypothesis.**
+**Compare Goldfish output to your Step 1 hypothesis.**
 - Convergence (top candidate matches your hypothesis): proceed to Step 3 with confidence.
-- Divergence: re-investigate. Read the Probe's evidence. If it is right, update the problem doc and tell the user "Probe flagged a different root cause; re-diagnosing." If you are right, write down WHY the Probe was wrong — that disagreement is itself useful signal.
+- Divergence: re-investigate. Read the Goldfish's evidence. If it is right, update the problem doc and tell the user "Goldfish flagged a different root cause; re-diagnosing." If you are right, write down WHY the Goldfish was wrong — that disagreement is itself useful signal.
 
-If the bug is genuinely tiny (1-3 line fix in a clearly-identified location), you may skip the Probe call — but only when the location is mechanically obvious. When in doubt, run it.
+If the bug is genuinely tiny (1-3 line fix in a clearly-identified location), you may skip the Goldfish call — but only when the location is mechanically obvious. When in doubt, run it.
 
 ## Step 3: Capture the bug as a failing test BEFORE fixing
 
@@ -97,11 +97,11 @@ Re-run the failing test. It must go green. If it does not, you have not fixed th
 
 For UI bugs: re-verify in Chrome MCP / on the simulator with the same steps from the original repro. A before/after screenshot pair often helps the user follow.
 
-## Step 5: Hand off to `/claudeflows:precommit-review`
+## Step 5: Hand off to `/cf-precommit-review`
 
-Run `/claudeflows:precommit-review` per the canonical procedure. The reviewer is a second Probe — it sees only the diff. Triage findings, loop, and exit.
+Run `/cf-precommit-review` per the canonical procedure. The reviewer is a second Goldfish — it sees only the diff. Triage findings, loop, and exit.
 
-If `/claudeflows:precommit-review` surfaces an issue that the Step 2 diagnosis Probe missed, note it in the final report — it tells us where the diagnosis prompt needs to be tighter next time.
+If `/cf-precommit-review` surfaces an issue that the Step 2 diagnosis Goldfish missed, note it in the final report — it tells us where the diagnosis prompt needs to be tighter next time.
 
 ## Step 6: Test gate
 
@@ -118,8 +118,8 @@ Print to the user:
 - Root cause (one line)
 - Fix (file:line)
 - Test that captures it (file:test name)
-- Probe-vs-Editor agreement (converged / diverged + why)
-- `/claudeflows:precommit-review` outcome (rounds, fixes, rebuttals verbatim)
+- Goldfish-vs-Elephant agreement (converged / diverged + why)
+- `/cf-precommit-review` outcome (rounds, fixes, rebuttals verbatim)
 - Test gate status
 
 **STOP.** Do NOT commit; auto mode does not override the project's commit policy. Wait for the user's literal commit instruction. Follow the convention you observe in `git log` (subject style, ticket reference, trailers). Do not add `Co-Authored-By: Claude` unless the user's existing log already uses it.

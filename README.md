@@ -6,9 +6,9 @@ A collection of reusable workflows for software development and architecturing.
 
 > **Lineage:** The pattern comes from Dave Rensin's article ["Elephants, Goldfish, and the New Golden Age of Software Engineering"](https://drensin.medium.com/elephants-goldfish-and-the-new-golden-age-of-software-engineering-c33641a48874). 
 
-ClaudeFlows renames the two roles for clarity: **Editor** ("elephant") and **Probe** ("goldfish").
+ClaudeFlows uses the article's two roles: **Elephant** and **Goldfish**.
 
-> The **Editor** is your working session. Claude Code with full context: the conversation, CLAUDE.md, recent file reads, decisions already made. The **Probe** is a fresh subagent with no prior context that stress-tests a problem doc, a design doc, or a diff. The asymmetry is the test: a Probe that can't reach the same conclusion from the doc alone tells you the doc is wrong, not the Probe.
+> The **Elephant** is your working session. Claude Code with full context: the conversation, CLAUDE.md, recent file reads, decisions already made. The **Goldfish** is a fresh subagent with no prior context that stress-tests a problem doc, a design doc, or a diff. The asymmetry is the test: a Goldfish that can't reach the same conclusion from the doc alone tells you the doc is wrong, not the Goldfish.
 
 ## Install
 
@@ -22,26 +22,26 @@ ClaudeFlows renames the two roles for clarity: **Editor** ("elephant") and **Pro
 
 > Note: `/plugin` runs inside a Claude Code session. If your terminal says "/plugin isn't available in this environment," start `claude` first, then paste the commands at the prompt.
 
-Five skills become available, namespaced under `/claudeflows:`:
+Five slash commands become available, all prefixed `/cf-`:
 
 | Skill | When to use |
 |---|---|
-| `/claudeflows:brainstorm <rough idea>` | Early-stage concept design. Multiple Probes run in parallel with different lenses (technical / business / UX / contrarian / market research). Output: a concepts brief. |
-| `/claudeflows:prd <idea \| feature \| #issue>` | Turn an idea into a Product Requirements Document. Codebase grounding, structured gap-filling, deep research. Output: a PRD with explicit Open Questions. |
-| `/claudeflows:bug <description \| #issue \| URL>` | Bug fix flow. Problem doc → Probe diagnosis check → failing test → fix → precommit review → test gate. |
-| `/claudeflows:feature <description \| #issue \| URL>` | Feature flow. Scope confirm → design doc → three-Probe design check (readiness / critic / implementer) → implement → precommit review → test gate. |
-| `/claudeflows:precommit-review` | Independent reviewer loop on the pending diff. Lint + typecheck + tests as pre-flight, then a fresh subagent reviews the diff cold. |
+| `/cf-brainstorm <rough idea>` | Early-stage concept design. Multiple Goldfish run in parallel with different lenses (technical / business / UX / contrarian / market research). Output: a concepts brief. |
+| `/cf-prd <idea \| feature \| #issue>` | Turn an idea into a Product Requirements Document. Codebase grounding, structured gap-filling, deep research. Output: a PRD with explicit Open Questions. |
+| `/cf-bug <description \| #issue \| URL>` | Bug fix flow. Problem doc → Goldfish diagnosis check → failing test → fix → precommit review → test gate. |
+| `/cf-feature <description \| #issue \| URL>` | Feature flow. Scope confirm → design doc → three-Goldfish design check (readiness / critic / implementer) → implement → precommit review → test gate. |
+| `/cf-precommit-review` | Independent reviewer loop on the pending diff. Lint + typecheck + tests as pre-flight, then a fresh subagent reviews the diff cold. |
 
 Implementation skills (`bug`, `feature`) stop short of committing. You authorize the commit explicitly.
 
 Usage examples:
 
 ```sh
-/claudeflows:bug gh issue 42
-/claudeflows:feature gh issue 67
-/claudeflows:precommit-review
-/claudeflows:brainstorm "Let's think about adding X to Y."
-/claudeflows:prd "I need to implement X here is the description."
+/cf-bug gh issue 42
+/cf-feature gh issue 67
+/cf-precommit-review
+/cf-brainstorm "Let's think about adding X to Y."
+/cf-prd "I need to implement X here is the description."
 ```
 
 ## The pipeline
@@ -71,31 +71,31 @@ Pick the stage that matches what you have:
 
 ## How each skill uses the pattern
 
-- **`brainstorm`** inverts the pattern. Multiple Probes run in parallel, each with a different lens, free to web-search. The Editor synthesizes the divergent ideas into a concepts brief. All clarifying questions go through `AskUserQuestion`.
-- **`prd`** uses two waves: exploration Probes ground the request in the existing codebase, then research Probes run in parallel across distinct lenses (web search, optional Chrome MCP for logged-in sources). The Editor synthesizes a PRD with explicit Open Questions for whatever the user deferred.
-- **`feature`** uses **three** Probes per round: comprehension (does the doc read cleanly to a cold reader?), critic (where does the design break?), readiness (could a first-pass implementer ship this without follow-up questions?). A no-code gate holds until critic AND readiness sign off; comprehension is informational. Round 2+ skips comprehension.
-- **`bug`** uses one Probe to diagnose from only the symptom and repro. The Editor's hypothesis stays hidden; convergence buys confidence, divergence is signal. The bug is captured as a failing test before any fix.
-- **`precommit-review`** is itself a Probe. Sees only the diff, not the conversation. Findings triaged round by round with a hard cap and an `AskUserQuestion` escalation if the loop doesn't converge.
+- **`brainstorm`** inverts the pattern. Multiple Goldfish run in parallel, each with a different lens, free to web-search. The Elephant synthesizes the divergent ideas into a concepts brief. All clarifying questions go through `AskUserQuestion`.
+- **`prd`** uses two waves: exploration Goldfish ground the request in the existing codebase, then research Goldfish run in parallel across distinct lenses (web search, optional Chrome MCP for logged-in sources). The Elephant synthesizes a PRD with explicit Open Questions for whatever the user deferred.
+- **`feature`** uses **three** Goldfish per round: comprehension (does the doc read cleanly to a cold reader?), critic (where does the design break?), readiness (could a first-pass implementer ship this without follow-up questions?). A no-code gate holds until critic AND readiness sign off; comprehension is informational. Round 2+ skips comprehension.
+- **`bug`** uses one Goldfish to diagnose from only the symptom and repro. The Elephant's hypothesis stays hidden; convergence buys confidence, divergence is signal. The bug is captured as a failing test before any fix.
+- **`precommit-review`** is itself a Goldfish. Sees only the diff, not the conversation. Findings triaged round by round with a hard cap and an `AskUserQuestion` escalation if the loop doesn't converge.
 
 ## Workflows
 
-Each skill structures a different Editor↔Probe dance. The diagrams below show the message flow. The **Editor** is your Claude Code session — full context, institutional memory. A **Probe** is a fresh subagent spawned with no shared context, receiving only what the Editor hands it. The **user** is you, kept in the loop via `AskUserQuestion` at decision points.
+Each skill structures a different Elephant↔Goldfish dance. The diagrams below show the message flow. The **Elephant** is your Claude Code session — full context, institutional memory. A **Goldfish** is a fresh subagent spawned with no shared context, receiving only what the Elephant hands it. The **user** is you, kept in the loop via `AskUserQuestion` at decision points.
 
 ### `brainstorm`
 
-**Inverts the pattern.** Multiple Probes run in **parallel**, each on a different lens (technical, business, UX, contrarian, market research). Their lack of shared context is what makes them generate divergent ideas. The Editor synthesizes the divergent output into a concepts brief and helps the user converge on a direction.
+**Inverts the pattern.** Multiple Goldfish run in **parallel**, each on a different lens (technical, business, UX, contrarian, market research). Their lack of shared context is what makes them generate divergent ideas. The Elephant synthesizes the divergent output into a concepts brief and helps the user converge on a direction.
 
-**Output:** a clusters → ranked picks → open questions brief; optional handoff to `/claudeflows:feature`.
+**Output:** a clusters → ranked picks → open questions brief; optional handoff to `/cf-feature`.
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant U as User
-    participant E as Editor
-    participant G1 as Probe (Technical)
-    participant G2 as Probe (Business)
-    participant G3 as Probe (UX)
-    participant Gn as Probe (Contrarian/Market)
+    participant E as Elephant
+    participant G1 as Goldfish (Technical)
+    participant G2 as Goldfish (Business)
+    participant G3 as Goldfish (UX)
+    participant Gn as Goldfish (Contrarian/Market)
     participant GC as Contrarian sweep
 
     U->>E: rough idea
@@ -124,7 +124,7 @@ sequenceDiagram
     E->>U: CONCEPTS BRIEF + ranked picks
     U->>E: pick / re-run / save / drop
     opt Handoff
-        E-->>U: "Run /claudeflows:feature <concept> when ready"
+        E-->>U: "Run /cf-feature <concept> when ready"
     end
 ```
 
@@ -132,20 +132,20 @@ sequenceDiagram
 
 ### `prd`
 
-**Two waves of Probes.** Wave 1 grounds the request in the existing codebase (parallel exploration Probes). Wave 2 — after structured gap-filling Q&A with the user — runs research Probes in parallel across distinct lenses. The Editor synthesizes a PRD with explicit Open Questions for whatever the user deferred.
+**Two waves of Goldfish.** Wave 1 grounds the request in the existing codebase (parallel exploration Goldfish). Wave 2 — after structured gap-filling Q&A with the user — runs research Goldfish in parallel across distinct lenses. The Elephant synthesizes a PRD with explicit Open Questions for whatever the user deferred.
 
-**Output:** a PRD (executive summary, scope, requirements, metrics, risks, open questions, sources); optional save to disk and/or handoff to `/claudeflows:feature`.
+**Output:** a PRD (executive summary, scope, requirements, metrics, risks, open questions, sources); optional save to disk and/or handoff to `/cf-feature`.
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant U as User
-    participant E as Editor
-    participant GA as Probe (Existing surfaces)
-    participant GB as Probe (Architecture)
-    participant R1 as Probe (Market/Prior art)
-    participant R2 as Probe (Technical patterns)
-    participant R3 as Probe (UX/Compliance/Perf)
+    participant E as Elephant
+    participant GA as Goldfish (Existing surfaces)
+    participant GB as Goldfish (Architecture)
+    participant R1 as Goldfish (Market/Prior art)
+    participant R2 as Goldfish (Technical patterns)
+    participant R3 as Goldfish (UX/Compliance/Perf)
 
     U->>E: idea or #issue
     E->>U: Q1 depth / Q2 research / Q3 output target
@@ -179,7 +179,7 @@ sequenceDiagram
     U->>E: approve / refine sections / restart
     opt Output
         E->>E: write to disk / memory
-        E-->>U: "Run /claudeflows:feature <summary> when ready"
+        E-->>U: "Run /cf-feature <summary> when ready"
     end
 ```
 
@@ -187,7 +187,7 @@ sequenceDiagram
 
 ### `feature`
 
-**Three Probes per round** stress-test the design doc the Editor drafted. Comprehension (does the doc read cleanly to a cold reader?), Critic (what gaps?), Readiness (could a first-pass implementer ship this without asking any questions?). A **no-code gate** holds until BOTH Critic and Readiness sign off (`design ready` + `implementation ready`). Round 2+ skips Comprehension. Implementation only starts after the gate closes; then the diff goes through `/claudeflows:precommit-review`.
+**Three Goldfish per round** stress-test the design doc the Elephant drafted. Comprehension (does the doc read cleanly to a cold reader?), Critic (what gaps?), Readiness (could a first-pass implementer ship this without asking any questions?). A **no-code gate** holds until BOTH Critic and Readiness sign off (`design ready` + `implementation ready`). Round 2+ skips Comprehension. Implementation only starts after the gate closes; then the diff goes through `/cf-precommit-review`.
 
 **Output:** implemented + reviewed code, ready for the user to commit.
 
@@ -195,11 +195,11 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     participant U as User
-    participant E as Editor
-    participant PA as Probe A (Comprehension)
-    participant PB as Probe B (Critic)
-    participant PC as Probe C (Readiness)
-    participant PR as /claudeflows:precommit-review
+    participant E as Elephant
+    participant PA as Goldfish A (Comprehension)
+    participant PB as Goldfish B (Critic)
+    participant PC as Goldfish C (Readiness)
+    participant PR as /cf-precommit-review
 
     U->>E: feature description or #issue
     E->>U: scope confirmation (1-2 sentences)
@@ -208,7 +208,7 @@ sequenceDiagram
 
     rect rgb(245,245,245)
     Note over E,PC: Round 1 — all three passes
-    par Three-Probe design check
+    par Three-Goldfish design check
         E->>PA: design doc only (cold reader paraphrase)
         E->>PB: design doc only (find gaps)
         E->>PC: design doc only (executable in one pass?)
@@ -248,7 +248,7 @@ sequenceDiagram
 
 ### `bug`
 
-**One Probe diagnoses the bug** from only the symptom + repro. The Editor's hypothesis stays hidden until after the Probe reports — convergence buys confidence; divergence is signal worth investigating. The bug gets captured as a **failing test before any fix is written**. Then the same diff goes through `/claudeflows:precommit-review`.
+**One Goldfish diagnoses the bug** from only the symptom + repro. The Elephant's hypothesis stays hidden until after the Goldfish reports — convergence buys confidence; divergence is signal worth investigating. The bug gets captured as a **failing test before any fix is written**. Then the same diff goes through `/cf-precommit-review`.
 
 **Output:** failing-test-driven fix, ready for the user to commit.
 
@@ -256,9 +256,9 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     participant U as User
-    participant E as Editor
-    participant GD as Probe (Diagnosis)
-    participant PR as /claudeflows:precommit-review
+    participant E as Elephant
+    participant GD as Goldfish (Diagnosis)
+    participant PR as /cf-precommit-review
 
     U->>E: bug description / #issue / URL
     opt Triviality gate (typo, formatter, version bump)
@@ -271,15 +271,15 @@ sequenceDiagram
         U->>E: repro details
     end
 
-    Note over E,GD: Asymmetry: Probe gets symptom + repro only,<br/>NOT the Editor's hypothesised root cause
+    Note over E,GD: Asymmetry: Goldfish gets symptom + repro only,<br/>NOT the Elephant's hypothesised root cause
     E->>GD: investigate, rank candidate root causes (no fix)
     GD-->>E: top 1-3 candidates with file:line + falsifying evidence
 
-    alt Convergence — Probe matches Editor hypothesis
+    alt Convergence — Goldfish matches Elephant hypothesis
         Note over E: Proceed with confidence
     else Divergence
-        E->>E: re-investigate, update problem doc if Probe is right
-        E->>U: surface — Probe flagged a different root cause
+        E->>E: re-investigate, update problem doc if Goldfish is right
+        E->>U: surface — Goldfish flagged a different root cause
     end
 
     E->>E: write failing test capturing the bug
@@ -290,14 +290,14 @@ sequenceDiagram
     E->>PR: hand off diff
     PR-->>E: rounds, fixes, rebuttals
     E->>E: test gate + re-verify original repro
-    E->>U: final report (root cause, fix, test, Probe agreement) — STOP
+    E->>U: final report (root cause, fix, test, Goldfish agreement) — STOP
 ```
 
 ---
 
 ### `precommit-review`
 
-**The reviewer is itself a Probe.** It sees only the diff, not the conversation, not the implementation intent, not what the Editor was trying to do. Findings are triaged round by round: **fix or rebut verbatim** (no silent dismissals). The loop runs until `no findings` AND every prior-round finding is settled, with a **hard cap of 5 rounds** and structured user escalation if it doesn't converge.
+**The reviewer is itself a Goldfish.** It sees only the diff, not the conversation, not the implementation intent, not what the Elephant was trying to do. Findings are triaged round by round: **fix or rebut verbatim** (no silent dismissals). The loop runs until `no findings` AND every prior-round finding is settled, with a **hard cap of 5 rounds** and structured user escalation if it doesn't converge.
 
 **Output:** a reviewer-cleared diff with every rebuttal surfaced verbatim to the user.
 
@@ -305,8 +305,8 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     participant U as User
-    participant E as Editor
-    participant GR as Probe (Reviewer)
+    participant E as Elephant
+    participant GR as Goldfish (Reviewer)
 
     Note over E: Pre-flight: lint, typecheck, unit, e2e, codegen<br/>(sequential, not chained — new errors only are blockers)
 
@@ -353,7 +353,7 @@ claude --plugin-dir /path/to/claudeflows/plugins/claudeflows
 Inside the session:
 
 ```
-/claudeflows:precommit-review
+/cf-precommit-review
 ```
 
 The skill should detect your test repo's stack and run the appropriate lint / test sequence.

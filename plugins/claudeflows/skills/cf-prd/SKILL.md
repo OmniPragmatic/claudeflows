@@ -1,13 +1,13 @@
 ---
-name: prd
-description: Build a thorough PRD from a rough idea: codebase grounding, structured gap-filling, deep research, parallel Probes synthesis
+name: cf-prd
+description: Build a thorough PRD from a rough idea: codebase grounding, structured gap-filling, deep research, parallel Goldfish synthesis
 argument-hint: idea or feature description (the PRD's seed)
 disable-model-invocation: true
 ---
 
-Build a Product Requirements Document for an idea or feature, with high rigor: ground the request in the actual codebase, surface every gap in the user's description and resolve them through structured Q&A, then run deep research (web search, parallel Probes, optional Chrome MCP for logged-in sources) before synthesizing the PRD. Output is the PRD itself, ready to feed into `/claudeflows:feature` or be saved as a durable artifact.
+Build a Product Requirements Document for an idea or feature, with high rigor: ground the request in the actual codebase, surface every gap in the user's description and resolve them through structured Q&A, then run deep research (web search, parallel Goldfish, optional Chrome MCP for logged-in sources) before synthesizing the PRD. Output is the PRD itself, ready to feed into `/cf-feature` or be saved as a durable artifact.
 
-This sits **between** `/claudeflows:brainstorm` (concept exploration) and `/claudeflows:feature` (implementation): `/claudeflows:brainstorm` asks "what should we build?"; `/claudeflows:prd` asks "what exactly are we building, and what's the surrounding context?"; `/claudeflows:feature` asks "how do we ship it?"
+This sits **between** `/cf-brainstorm` (concept exploration) and `/cf-feature` (implementation): `/cf-brainstorm` asks "what should we build?"; `/cf-prd` asks "what exactly are we building, and what's the surrounding context?"; `/cf-feature` asks "how do we ship it?"
 
 `$ARGUMENTS` is the idea. If empty, ask for one before doing anything. If `$ARGUMENTS` is a GitHub issue URL or `#<number>`, fetch it with `gh issue view <number>` and use its title + body as the seed.
 
@@ -24,16 +24,16 @@ Three questions in sequence (one `AskUserQuestion` call each):
 - `options`:
   1. **Lightweight (1-2 pages)** — "MVP-style PRD: problem, scope, success criteria, open questions. Skips deep research."
   2. **Standard (3-5 pages)** — "Default. Full PRD with codebase grounding, light research, and prioritized gap-filling."
-  3. **Comprehensive (5+ pages)** — "Heavy research, multiple Probes, market+technical+UX+compliance lenses. For high-stakes or unfamiliar domains."
+  3. **Comprehensive (5+ pages)** — "Heavy research, multiple Goldfish, market+technical+UX+compliance lenses. For high-stakes or unfamiliar domains."
 
 **Q2 — Research scope:**
-- `question`: "How much external research should the Probes do?"
+- `question`: "How much external research should the Goldfish do?"
 - `header`: `"Research"`
 - `multiSelect`: `false`
 - `options`:
   1. **None** — "First-principles + codebase only. Useful for internal tooling or speculative work."
   2. **Web search only** — "Public web for prior art, comparable products, technical patterns. No browser sessions."
-  3. **Web + Chrome MCP for gated sources** — "Web plus Chrome MCP for Reddit, X, paywalled articles, internal dashboards — anything that needs a logged-in browser. Probe will tell you what they need to look up before navigating."
+  3. **Web + Chrome MCP for gated sources** — "Web plus Chrome MCP for Reddit, X, paywalled articles, internal dashboards — anything that needs a logged-in browser. Goldfish will tell you what they need to look up before navigating."
 
 **Q3 — Output target:**
 - `question`: "Where should the PRD end up?"
@@ -42,21 +42,21 @@ Three questions in sequence (one `AskUserQuestion` call each):
 - `options`:
   1. **Save as a PRD doc** (prefer `docs/prds/<slug>-<YYYY-MM-DD>.md` if a `docs/` tree exists, otherwise `docs/specs/<slug>-<YYYY-MM-DD>.md`, otherwise `notes/prds/<slug>-<YYYY-MM-DD>.md`. If the project already has a PRD location — e.g. `docs/prds/`, `prd/`, or one referenced from CLAUDE.md — use that.) — "Durable artifact. Recommended for anything Standard or Comprehensive."
   2. **Print and chat only** — "PRD lives in this conversation. Good for Lightweight or throwaway exploration."
-  3. **Hand off to `/claudeflows:feature` after** — "Once the PRD is approved, end with the literal `/claudeflows:feature <one-line summary>` so the next step is one command away."
+  3. **Hand off to `/cf-feature` after** — "Once the PRD is approved, end with the literal `/cf-feature <one-line summary>` so the next step is one command away."
   4. **Save to memory** — "Persist as a durable note (e.g. CLAUDE.md or your memory system) for future sessions to recall. Prefer this for cross-cutting policies the PRD discovers, not the full doc."
 
 Cache the three answers. They drive the rest of the run.
 
 ## Step 1: Ground in the codebase
 
-Before asking the user anything else, the Editor must understand the existing codebase well enough to know what's already there. Spawn **1-2 Probes in parallel** with `subagent_type: "Explore"` (fall back to `"general-purpose"` if Explore is unavailable):
+Before asking the user anything else, the Elephant must understand the existing codebase well enough to know what's already there. Spawn **1-2 Goldfish in parallel** with `subagent_type: "Explore"` (fall back to `"general-purpose"` if Explore is unavailable):
 
-- **Probe A — "Existing surfaces"**: Find code that already touches the same domain as the seed. Report file:line citations of the closest analogues, the data model, the URL routes / API endpoints / screens that are nearby.
-- **Probe B — "Architecture and conventions"**: Read CLAUDE.md, any `docs/` index, the package manifests, recent commits referencing this area. Report: tech stack, multi-tenancy / auth model, testing tiers, deployment topology, anything that constrains how a new feature would land.
+- **Goldfish A — "Existing surfaces"**: Find code that already touches the same domain as the seed. Report file:line citations of the closest analogues, the data model, the URL routes / API endpoints / screens that are nearby.
+- **Goldfish B — "Architecture and conventions"**: Read CLAUDE.md, any `docs/` index, the package manifests, recent commits referencing this area. Report: tech stack, multi-tenancy / auth model, testing tiers, deployment topology, anything that constrains how a new feature would land.
 
 **Send a single message with both `Agent` tool uses** so they run concurrently.
 
-After both return, the Editor prints a **codebase brief** (5-15 lines):
+After both return, the Elephant prints a **codebase brief** (5-15 lines):
 
 ```
 CODEBASE BRIEF
@@ -68,7 +68,7 @@ CODEBASE BRIEF
 
 ## Step 2: Surface every gap
 
-Now the Editor analyzes `$ARGUMENTS` and the codebase brief, and produces a complete list of gaps. Categories to cover (omit only if genuinely n/a):
+Now the Elephant analyzes `$ARGUMENTS` and the codebase brief, and produces a complete list of gaps. Categories to cover (omit only if genuinely n/a):
 
 - **Who & why**: target user persona, the job-to-be-done, the trigger / moment of need
 - **What**: in-scope behavior, out-of-scope explicitly, MVP vs. full, feature variants or modes
@@ -98,7 +98,7 @@ If the gap count is small (≤5) AND each gap is sharp and self-contained, prese
 
 ## Step 3: Fill the selected gaps
 
-For every gap the user selected, ask one `AskUserQuestion` per gap. Each question is structured: present the gap, list 3-5 plausible answers (the Editor's best educated guesses based on the codebase brief and `$ARGUMENTS`), plus an "Other (describe in chat)" escape hatch. Concrete pattern:
+For every gap the user selected, ask one `AskUserQuestion` per gap. Each question is structured: present the gap, list 3-5 plausible answers (the Elephant's best educated guesses based on the codebase brief and `$ARGUMENTS`), plus an "Other (describe in chat)" escape hatch. Concrete pattern:
 
 ```
 Q5+ — <Gap label>:
@@ -119,7 +119,7 @@ Do NOT ask all gaps in one shot. Stream them — the user sees the running pictu
 
 ## Step 4: Deep research (if Q2 was not "None")
 
-Spawn **3-5 research Probes in parallel** using `subagent_type: "general-purpose"` (full tool access). Pick lenses based on the seed and the answered gaps. **Send one message with all `Agent` tool uses** so they run concurrently.
+Spawn **3-5 research Goldfish in parallel** using `subagent_type: "general-purpose"` (full tool access). Pick lenses based on the seed and the answered gaps. **Send one message with all `Agent` tool uses** so they run concurrently.
 
 Default lens kit (mix and match):
 
@@ -129,7 +129,7 @@ Default lens kit (mix and match):
 - **Compliance & risk** — "Regulatory exposure, accessibility requirements, security posture, privacy obligations. What MUST this PRD account for?"
 - **Performance & scale** — "Realistic numbers for a feature of this kind: latency budgets, concurrency, data volume, cost-per-action. Source the numbers."
 
-**Each Probe prompt body (between markers, exclusive):**
+**Each Goldfish prompt body (between markers, exclusive):**
 
 ```
 <<<RESEARCH_START>>>
@@ -152,16 +152,16 @@ End with the literal string `lens complete`.
 <<<RESEARCH_END>>>
 ```
 
-After all Probes return, the Editor prints a **research summary** (no synthesis yet — that's Step 5):
+After all Goldfish return, the Elephant prints a **research summary** (no synthesis yet — that's Step 5):
 
-- One section per lens, each with the Probe's findings + implications.
+- One section per lens, each with the Goldfish's findings + implications.
 - Sources consolidated at the end.
-- Anything the Probes flagged as "needs human verification" surfaced explicitly.
+- Anything the Goldfish flagged as "needs human verification" surfaced explicitly.
 
-If a Probe stopped to ask about a Chrome MCP navigation, surface the question to the user via `AskUserQuestion`:
+If a Goldfish stopped to ask about a Chrome MCP navigation, surface the question to the user via `AskUserQuestion`:
 
 **Q-N — Research navigation approval:**
-- `question`: "Probe <lens> wants to navigate to <URL> to look up <topic>. Allow?"
+- `question`: "Goldfish <lens> wants to navigate to <URL> to look up <topic>. Allow?"
 - `header`: `"Browse?"`
 - `multiSelect`: `false`
 - `options`:
@@ -171,7 +171,7 @@ If a Probe stopped to ask about a Chrome MCP navigation, surface the question to
 
 ## Step 5: Synthesize the PRD
 
-The Editor now drafts the PRD by integrating: `$ARGUMENTS`, the codebase brief, the answered gaps, the unanswered gaps (open questions), the research summary. Use this structure (skip sections that are genuinely n/a; mark sections "TBD" if the gap was deferred to Open Questions):
+The Elephant now drafts the PRD by integrating: `$ARGUMENTS`, the codebase brief, the answered gaps, the unanswered gaps (open questions), the research summary. Use this structure (skip sections that are genuinely n/a; mark sections "TBD" if the gap was deferred to Open Questions):
 
 ```
 # PRD: <title>
@@ -216,13 +216,13 @@ The Editor now drafts the PRD by integrating: `$ARGUMENTS`, the codebase brief, 
 <table or bulleted list: risk, likelihood, impact, mitigation>
 
 ## Implementation hints
-<loose; refined later in /claudeflows:feature: layer ordering, data model sketch, key dependencies>
+<loose; refined later in /cf-feature: layer ordering, data model sketch, key dependencies>
 
 ## Open questions
 <gaps the user deferred, plus anything research surfaced as needing human verification>
 
 ## Sources & references
-<all Probes citations, deduplicated, grouped by theme>
+<all Goldfish citations, deduplicated, grouped by theme>
 
 ## Out-of-scope follow-ups
 <noted, not built; future PRDs>
@@ -262,7 +262,7 @@ Drive the output by what the user picked in Q3 (output target). Each Q3 selectio
 
 - **Save as `<path>`**: write the PRD to disk. If the path includes `<slug>` and `<YYYY-MM-DD>`, derive the slug from the PRD title (kebab-case, lowercase) and date from `date +%Y-%m-%d`. If the directory doesn't exist, create it. Confirm the path back to the user.
 - **Save to memory**: write the cross-cutting policies / constraints the PRD discovered (NOT the full PRD body — just the durable nuggets that future sessions should know) to the project's memory system or CLAUDE.md. Surface the diff before applying.
-- **Hand off to `/claudeflows:feature`**: print the literal command the user can paste to invoke `/claudeflows:feature`, with a one-line feature description sourced from the PRD's executive summary. Example: `Run /claudeflows:feature implement <PRD title>: <one-line summary> when ready.` Do NOT auto-invoke.
+- **Hand off to `/cf-feature`**: print the literal command the user can paste to invoke `/cf-feature`, with a one-line feature description sourced from the PRD's executive summary. Example: `Run /cf-feature implement <PRD title>: <one-line summary> when ready.` Do NOT auto-invoke.
 - **Print and chat only**: do nothing further.
 
 If multiple Q3 options were picked, do all of them.
@@ -276,6 +276,6 @@ Print to the user:
 - Gaps surfaced / filled / deferred (counts)
 - Research lenses run
 - Where the PRD lives now (file path, memory entry, both, or chat-only)
-- Next action (e.g. "Run `/claudeflows:feature ...` when ready" or "Open questions need user input before this is shippable")
+- Next action (e.g. "Run `/cf-feature ...` when ready" or "Open questions need user input before this is shippable")
 
 **STOP.** Do NOT commit; auto mode does not override the project's commit policy. If the PRD was saved to disk, it's a new file the user will commit themselves when ready. Follow the convention you observe in `git log` (subject style, ticket reference, trailers). Do not add `Co-Authored-By: Claude` unless the user's existing log already uses it.

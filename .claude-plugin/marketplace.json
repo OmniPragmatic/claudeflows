@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "claudeflows",
-      "description": "Five-stage Editor/Probe workflow for software work in Claude Code: brainstorm, PRD, bug, feature, precommit-review.",
+      "description": "Five-stage Elephant/Goldfish workflow for software work in Claude Code: brainstorm, PRD, bug, feature, precommit-review.",
       "author": {
         "name": "Vladyslav Shvedov",
         "url": "https://github.com/vshvedov"

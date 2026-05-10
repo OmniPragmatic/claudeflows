@@ -1,13 +1,13 @@
 ---
-name: brainstorm
-description: Generate divergent concept ideas for a raw thought using parallel Probes, web research, and structured synthesis
+name: cf-brainstorm
+description: Generate divergent concept ideas for a raw thought using parallel Goldfish, web research, and structured synthesis
 argument-hint: rough idea, problem space, or strategic question
 disable-model-invocation: true
 ---
 
-Brainstorm a new concept using the Editor/Probe workflow, **inverted**: instead of one Probe stress-testing the Editor's plan, you spawn **multiple** Probe in parallel, each with a different lens, each free to be creative and pull from the web. Their lack of shared context with the Editor is the point — they generate divergent ideas, not convergent ones. The Editor then synthesizes.
+Brainstorm a new concept using the Elephant/Goldfish workflow, **inverted**: instead of one Goldfish stress-testing the Elephant's plan, you spawn **multiple** Goldfish in parallel, each with a different lens, each free to be creative and pull from the web. Their lack of shared context with the Elephant is the point — they generate divergent ideas, not convergent ones. The Elephant then synthesizes.
 
-Use this for **early-stage** thinking: a half-formed app idea, an "I wonder if X" question, a feature whose problem is clear but whose shape isn't, a strategy you're stress-testing before committing. Not for implementation work — for that, hand off to `/claudeflows:feature` at the end.
+Use this for **early-stage** thinking: a half-formed app idea, an "I wonder if X" question, a feature whose problem is clear but whose shape isn't, a strategy you're stress-testing before committing. Not for implementation work — for that, hand off to `/cf-feature` at the end.
 
 `$ARGUMENTS` is the rough idea. If empty, ask for one before doing anything.
 
@@ -28,7 +28,7 @@ Ask three questions in sequence (one `AskUserQuestion` call each):
   4. **Feature ideation for existing product** — "The product exists. I'm sourcing ideas for what to build next."
 
 **Q2 — Breadth and depth:**
-- `question`: "How many concepts should the Probes surface, total?"
+- `question`: "How many concepts should the Goldfish surface, total?"
 - `header`: `"Breadth"`
 - `multiSelect`: `false`
 - `options`:
@@ -37,7 +37,7 @@ Ask three questions in sequence (one `AskUserQuestion` call each):
   3. **~20 concepts, shallow** — "Maximum divergence. Good when stage is 'raw concept' and you want surprises."
 
 **Q3 — Web research:**
-- `question`: "Should the Probes search the web for prior art, comparable products, sources?"
+- `question`: "Should the Goldfish search the web for prior art, comparable products, sources?"
 - `header`: `"Web"`
 - `multiSelect`: `false`
 - `options`:
@@ -45,11 +45,11 @@ Ask three questions in sequence (one `AskUserQuestion` call each):
   2. **On, focused** — "Search only for prior art / comparable products / market context. Don't go off on tangents."
   3. **Off** — "First-principles only. No web search. Useful for purely creative or speculative work."
 
-Cache the three answers. They drive the Probe prompts and the synthesis step.
+Cache the three answers. They drive the Goldfish prompts and the synthesis step.
 
 ## Step 1: Draft the seed
 
-Now the Editor writes a **seed**: a tight problem statement that every Probe will receive. Format:
+Now the Elephant writes a **seed**: a tight problem statement that every Goldfish will receive. Format:
 
 ```
 SEED
@@ -59,7 +59,7 @@ SEED
 - Breadth target: <from Q2, e.g. "~10 concepts">
 - Web research: <from Q3>
 - Constraints (inferred — please correct in chat if wrong): <bullet list — likely audience, plausible budget/timeline, tech inclinations, anything else inferable from $ARGUMENTS or the existing repo>
-- Success looks like: <one sentence — the Editor's best guess at what a great brief would unlock for the user>
+- Success looks like: <one sentence — the Elephant's best guess at what a great brief would unlock for the user>
 - Out of scope: <bullets — things explicitly NOT being asked here>
 ```
 
@@ -70,7 +70,7 @@ Print the seed. Then ask via `AskUserQuestion`:
 - `header`: `"Seed?"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Looks right, proceed** — "Spawn the Probes."
+  1. **Looks right, proceed** — "Spawn the Goldfish."
   2. **Refine in chat first** — "I want to correct one or two things in chat before you spawn."
   3. **Restart** — "The seed misread the question. Re-run framing."
 
@@ -89,9 +89,9 @@ If the user picks "Refine in chat first," ask **Q4.5** via `AskUserQuestion` fir
 
 Then ask in chat for the correction text for the selected field(s) only — one targeted prompt referencing the chosen fields, not an open-ended "what would you like to change?". Re-print the revised seed and re-ask Q4. If "Restart," go back to Step 0.
 
-## Step 2: Spawn parallel divergent Probes
+## Step 2: Spawn parallel divergent Goldfish
 
-Pick **3-5 lenses** based on the seed. Each lens becomes one Probe. They run in parallel — **send a single message with multiple `Agent` tool uses**, not sequential calls.
+Pick **3-5 lenses** based on the seed. Each lens becomes one Goldfish. They run in parallel — **send a single message with multiple `Agent` tool uses**, not sequential calls.
 
 Default lens kit (mix and match per the seed):
 
@@ -103,15 +103,15 @@ Default lens kit (mix and match per the seed):
 - **Adjacent / lateral** — "What's the same problem in a totally different domain? What pattern from a different industry maps onto this? What if we removed the most obvious assumption?"
 - **First-principles** — "Strip the problem to its core. What's the minimal artifact that would deliver the value? What is the user actually buying when they buy this?"
 
-Each Probe gets:
+Each Goldfish gets:
 - `subagent_type: "general-purpose"` (full tool access including `WebSearch` if Q3 enabled it)
-- `description: "Brainstorm Probe — <lens name>"`
+- `description: "Brainstorm Goldfish — <lens name>"`
 
-**Prompt body to send to each Probe (between markers, exclusive):**
+**Prompt body to send to each Goldfish (between markers, exclusive):**
 
 ```
 <<<BRAINSTORM_START>>>
-You are a fresh creative thinker with NO prior context. The user is brainstorming a concept and wants divergent ideas — not a single safe answer. Your lens for this round is: **<LENS NAME>**. Stay in that lens; other Probe are covering the others.
+You are a fresh creative thinker with NO prior context. The user is brainstorming a concept and wants divergent ideas — not a single safe answer. Your lens for this round is: **<LENS NAME>**. Stay in that lens; other Goldfish are covering the others.
 
 SEED:
 <PASTE FULL SEED FROM STEP 1>
@@ -133,20 +133,20 @@ End with the literal string `lens complete`.
 <<<BRAINSTORM_END>>>
 ```
 
-Substitute `<LENS NAME>`, `<PASTE FULL SEED FROM STEP 1>`, `<PER-LENS COUNT>`, and the conditional web-research line per Probe.
+Substitute `<LENS NAME>`, `<PASTE FULL SEED FROM STEP 1>`, `<PER-LENS COUNT>`, and the conditional web-research line per Goldfish.
 
 ## Step 3: Optional contrarian sweep
 
-After all parallel Probes return, if and only if the breadth target was "~10" or "~20," spawn ONE more Probe:
+After all parallel Goldfish return, if and only if the breadth target was "~10" or "~20," spawn ONE more Goldfish:
 
 - `subagent_type: "general-purpose"`
-- `description: "Brainstorm Probe — what they all missed"`
+- `description: "Brainstorm Goldfish — what they all missed"`
 
 This one gets the seed PLUS the deduplicated set of all concepts so far, and is asked: "What did they ALL miss? What lens didn't anyone use? What concept would a smart outsider propose that none of these touch?" Output 2-3 additional concepts in the same format.
 
 ## Step 4: Synthesize the concepts brief
 
-Now the Editor. Read every Probe's output. Produce the **concepts brief**:
+Now the Elephant. Read every Goldfish's output. Produce the **concepts brief**:
 
 ```
 CONCEPTS BRIEF
@@ -157,10 +157,10 @@ CLUSTERS
 
 <For each cluster:>
   ## <Cluster name>
-  - <Concept name>: <the bet, 1 sentence> [lens: <which Probe>] <[sources: URL, URL] if any>
+  - <Concept name>: <the bet, 1 sentence> [lens: <which Goldfish>] <[sources: URL, URL] if any>
   - <Concept name>: ...
 
-RANKED PICKS (Editor's view, with reasoning)
+RANKED PICKS (Elephant's view, with reasoning)
 1. **<Concept name>** — <why this ranks first; what evidence in the brief supports it; what's the next step to validate>
 2. **<Concept name>** — ...
 3. **<Concept name>** — ...
@@ -188,7 +188,7 @@ After the brief, ask:
 - `options`:
   1. **Pick a direction** — "I want to commit to one of the ranked picks (or one I'll name)."
   2. **Another round, tighter framing** — "Re-run with a sharper seed (I'll refine constraints in chat)."
-  3. **Another round, different lenses** — "Re-run with different Probe lenses (I'll pick)."
+  3. **Another round, different lenses** — "Re-run with different Goldfish lenses (I'll pick)."
   4. **Save brief and stop** — "Good output, file it for later, no immediate action."
   5. **Drop it** — "This direction isn't worth pursuing."
 
@@ -210,14 +210,14 @@ If the user picks options 4 or 5, ask in chat with one targeted prompt: option 4
 Then ask **Q7** via `AskUserQuestion`:
 
 **Q7 — Handoff:**
-- `question`: "Want to spin the chosen concept into `/claudeflows:feature` to start designing the build?"
+- `question`: "Want to spin the chosen concept into `/cf-feature` to start designing the build?"
 - `header`: `"Handoff"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Yes, hand off to `/claudeflows:feature`** — "Use the chosen concept as the feature description."
+  1. **Yes, hand off to `/cf-feature`** — "Use the chosen concept as the feature description."
   2. **Not yet** — "I'll sit with it. Save the brief and stop."
 
-If they pick yes, end this command and tell the user: "Run `/claudeflows:feature <chosen concept name + one-sentence description>` when ready."
+If they pick yes, end this command and tell the user: "Run `/cf-feature <chosen concept name + one-sentence description>` when ready."
 
 If **Another round, tighter framing**: capture the user's refinements in chat, update the seed, re-run from Step 2 with the same lenses.
 
@@ -240,10 +240,10 @@ If **Drop it**: print one-line acknowledgement and stop.
 
 Print to the user:
 - Seed (one line)
-- Number of Probes run, with lenses
+- Number of Goldfish run, with lenses
 - Number of concepts surfaced (post-dedup)
 - Top 3 ranked picks with one-line reasoning each
 - Where the brief was saved (if anywhere)
-- Next action (handoff to `/claudeflows:feature`, refinement, or stop)
+- Next action (handoff to `/cf-feature`, refinement, or stop)
 
-**STOP.** No commit, no code changes — this command produces a brief, not a diff. If the user picked the handoff option, they'll invoke `/claudeflows:feature` themselves on the next turn.
+**STOP.** No commit, no code changes — this command produces a brief, not a diff. If the user picked the handoff option, they'll invoke `/cf-feature` themselves on the next turn.

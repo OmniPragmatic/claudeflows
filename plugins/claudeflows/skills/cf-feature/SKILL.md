@@ -1,11 +1,11 @@
 ---
-name: feature
-description: Build a new feature using the Editor/Probe workflow — design doc, Probe design check, implement, review, validate
+name: cf-feature
+description: Build a new feature using the Elephant/Goldfish workflow — design doc, Goldfish design check, implement, review, validate
 argument-hint: feature description (what the user wants and why)
 disable-model-invocation: true
 ---
 
-Build a new feature using the Editor/Probe workflow. The aim: design before code, let a fresh Probe stress-test the design doc, then implement, review, and validate.
+Build a new feature using the Elephant/Goldfish workflow. The aim: design before code, let a fresh Goldfish stress-test the design doc, then implement, review, and validate.
 
 `$ARGUMENTS` is the feature description provided by the user. If empty, ask for one before doing anything. If `$ARGUMENTS` is a GitHub issue URL or `#<number>`, fetch it with `gh issue view <number> --json title,body,labels,comments` and seed the design doc from it.
 
@@ -46,11 +46,11 @@ For UI work, sketch the visual structure in plain text or pseudo-JSX. If the des
 
 **Do NOT edit, write, scaffold, or refactor code until BOTH Pass B (Critic) AND Pass C (Readiness) in Step 2 close with their ready tokens (`design ready` + `implementation ready`).** Article rule, paraphrased: *"I do not want you to create code. We are not going to create code. Resist your impulse."* This holds until the design doc passes both gates — even if the user asks to skip ahead, even if the change "looks trivial", even if it is "just one line".
 
-If the user explicitly asks to skip the gate ("just write the code", "skip the design doc", etc.), restate the gate, name the still-open passes, and require an explicit override ("yes, override the no-code gate") before touching any file outside the design doc itself. The exception is `/claudeflows:bug` for trivial fixes covered by its own Step 0 triviality gate — that is a separate command with a separate gate.
+If the user explicitly asks to skip the gate ("just write the code", "skip the design doc", etc.), restate the gate, name the still-open passes, and require an explicit override ("yes, override the no-code gate") before touching any file outside the design doc itself. The exception is `/cf-bug` for trivial fixes covered by its own Step 0 triviality gate — that is a separate command with a separate gate.
 
 The design doc itself, test names mentioned in chat (not yet on disk), and read-only exploration (`Read`, `Grep`, `Bash` for `git status` / `git log` / `git diff`, any other read-only inspection commands the stack uses, e.g. `bundle exec rails routes`, `flutter analyze --no-pub`, `npx wrangler types`, `go doc ./...`) are NOT code edits and are permitted.
 
-## Step 2: Three-Probe design check
+## Step 2: Three-Goldfish design check
 
 Run the article's full design-stage protocol: three sequential `Agent` calls per round (or two on revisions — see below), each with no prior context. The combined gate is "ready iff critic AND readiness both sign off"; comprehension is informational.
 
@@ -60,7 +60,7 @@ Each pass uses `subagent_type: "general-purpose"` and gets ONLY the design doc (
 
 ### Pass A — Comprehension (round 1 only)
 
-`description: "Probe comprehension check"`. Verifies the doc reads cleanly to a cold reader.
+`description: "Goldfish comprehension check"`. Verifies the doc reads cleanly to a cold reader.
 
 ```
 <<<COMPREHENSION_START>>>
@@ -88,7 +88,7 @@ DESIGN DOC:
 
 ### Pass B — Critic (every round)
 
-`description: "Probe design critic"`. Finds gaps that block implementation.
+`description: "Goldfish design critic"`. Finds gaps that block implementation.
 
 ```
 <<<DESIGN_START>>>
@@ -106,7 +106,7 @@ Append stack-specific gap items where they apply: multi-tenant scoping consisten
 
 If the project has a PRD relevant to this surface (look in `docs/prds/`, `docs/specs/`, or referenced from CLAUDE.md), load it and check that the design doc is consistent with it.
 
-For UI work, the Probe may navigate the running dev server via Chrome MCP (`mcp__Claude_in_Chrome__*`) at the project's dev URL to verify how an existing surface behaves. Backend-only repos: omit.) to verify how an existing surface behaves."
+For UI work, the Goldfish may navigate the running dev server via Chrome MCP (`mcp__Claude_in_Chrome__*`) at the project's dev URL to verify how an existing surface behaves. Backend-only repos: omit.) to verify how an existing surface behaves."
 - For mobile / backend-only: omit.]
 
 DESIGN DOC:
@@ -119,7 +119,7 @@ Output: numbered list of gaps, with file:line citations where applicable. End wi
 
 ### Pass C — Readiness (every round)
 
-`description: "Probe implementation readiness"`. Stricter than the critic: not "is the design good?" but "is the design _executable_ in one pass?"
+`description: "Goldfish implementation readiness"`. Stricter than the critic: not "is the design good?" but "is the design _executable_ in one pass?"
 
 ```
 <<<READINESS_START>>>
@@ -169,7 +169,7 @@ Plus, if Pass A returned `comprehension unclear`, prepend:
 <verbatim Pass A output>
 ```
 
-Tell the Editor to address EVERY numbered gap from BOTH the CRITIC GAPS and READINESS OPEN QUESTIONS sections — do not collapse or skip a section because the numbering restarts. Each gap is either: addressed in a doc revision, or rebutted with a verbatim reason citing CLAUDE.md / the PRD or other source-of-truth doc (loaded earlier) / the user's words from this conversation. Print the revised doc back to the user once both gates close.
+Tell the Elephant to address EVERY numbered gap from BOTH the CRITIC GAPS and READINESS OPEN QUESTIONS sections — do not collapse or skip a section because the numbering restarts. Each gap is either: addressed in a doc revision, or rebutted with a verbatim reason citing CLAUDE.md / the PRD or other source-of-truth doc (loaded earlier) / the user's words from this conversation. Print the revised doc back to the user once both gates close.
 
 Then re-run Pass B and Pass C against the revised doc (skip Pass A — see above). If the round still does not converge after **three revisions**, the feature is under-specified — **stop and ask the user** for more direction rather than burning more rounds.
 
@@ -193,9 +193,9 @@ After each layer, briefly verify before moving on. Examples: migration → run i
 
 If the feature touches a multi-tenant or auth-scoped surface, **verify cross-tenant isolation**: log in as a user on a different tenant and confirm they cannot see / modify the new surface. Do this even if the design doc didn't call it out — the test is cheap and the failure mode is severe.
 
-## Step 5: Hand off to `/claudeflows:precommit-review`
+## Step 5: Hand off to `/cf-precommit-review`
 
-Run `/claudeflows:precommit-review`. Pass the feature name as `$ARGUMENTS` so the reviewer focuses there.
+Run `/cf-precommit-review`. Pass the feature name as `$ARGUMENTS` so the reviewer focuses there.
 
 ## Step 6: Test gate
 
@@ -212,7 +212,7 @@ Print to the user:
 - Files touched (grouped by layer: layer names appropriate to the stack (e.g. migrations / models / controllers / api / workers / views / tests; or models / network / service / BLoC / widgets / screens / tests))
 - Tests added (file:test name each)
 - Design-check result (gaps surfaced and how each was resolved)
-- `/claudeflows:precommit-review` outcome (rounds, fixes, rebuttals verbatim)
+- `/cf-precommit-review` outcome (rounds, fixes, rebuttals verbatim)
 - Test gate status
 - Walkthrough summary: what was driven (Chrome MCP for web; simulator for mobile), golden path traversed, edge cases exercised, cross-tenant verification result if applicable.
 - Out-of-scope follow-ups noted in the design doc

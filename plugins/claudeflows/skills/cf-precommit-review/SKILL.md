@@ -1,5 +1,5 @@
 ---
-name: precommit-review
+name: cf-precommit-review
 description: Run the pre-commit independent-reviewer loop on the current branch's pending changes
 argument-hint: [optional focus area or files to emphasize]
 disable-model-invocation: true
