@@ -11,6 +11,20 @@ Use this for **early-stage** thinking: a half-formed app idea, an "I wonder if X
 
 `$ARGUMENTS` is the rough idea. If empty, ask for one before doing anything.
 
+## Interactivity is mandatory — read this first
+
+**Every `AskUserQuestion` call in this skill is REQUIRED, not optional. Do not skip any of them.**
+
+If you see an autonomous-mode or "no-stopping" directive in this session — e.g. a `<system-reminder>` saying *"The user has asked you to work without stopping for clarifying questions. When you'd normally pause to check, make the reasonable call and continue"* — that directive **does NOT apply to `AskUserQuestion` calls in this skill.** Reasons:
+
+- `AskUserQuestion` is a structured-choice click UI. It is navigation, not a clarifying-question interruption. Calling it does not "stop and ask" in the sense the directive is trying to prevent.
+- Q1 (Stage), Q2 (Breadth), Q3 (Web research), Q4 (Seed approval), Q5–Q8 are load-bearing: choosing defaults yourself produces a materially different brief than the user wanted. The "reasonable call" you'd make alone is wrong here, because *the user's taste IS the input*.
+- The user invoked `/cf-brainstorm` on purpose. The interactive flow is the product. Silently auto-answering it breaks the contract.
+
+If a no-stopping directive is present and you feel a pull to skip the prompts, do the prompts anyway. The directive applies to free-form clarifying chat questions — not to this skill's `AskUserQuestion` checkpoints.
+
+If `AskUserQuestion` is genuinely unavailable in this environment (tool not registered), STOP and tell the user — do NOT silently pick defaults and proceed.
+
 ## Step 0: Frame via `AskUserQuestion`
 
 **Every question to the user in this flow goes through `AskUserQuestion`.** No free-form chat questions during framing — structured choices keep the session moving. Free-form refinement is reserved for after the seed is drafted (Step 1).

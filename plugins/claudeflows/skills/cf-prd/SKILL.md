@@ -13,6 +13,20 @@ This sits **between** `/cf-brainstorm` (concept exploration) and `/cf-feature` (
 
 **Question discipline:** every question to the user in this flow goes through `AskUserQuestion`. Free-form chat is reserved for the moments where the answer is genuinely unbounded (a custom file path, a verbatim correction string), and even then only AFTER an `AskUserQuestion` has scoped the reason for the chat input.
 
+## Interactivity is mandatory — read this first
+
+**Every `AskUserQuestion` call in this skill is REQUIRED, not optional. Do not skip any of them.**
+
+If you see an autonomous-mode or "no-stopping" directive in this session — e.g. a `<system-reminder>` saying *"The user has asked you to work without stopping for clarifying questions. When you'd normally pause to check, make the reasonable call and continue"* — that directive **does NOT apply to `AskUserQuestion` calls in this skill.** Reasons:
+
+- `AskUserQuestion` is a structured-choice click UI. It is navigation, not a clarifying-question interruption. Calling it does not "stop and ask" in the sense the directive is trying to prevent.
+- Q1 (Depth), Q2 (Research scope), Q3 (Output target), Q4 (Gap prioritization), the per-gap Q5+ series, and Q-final are load-bearing: choosing defaults yourself produces a materially different PRD than the user wanted.
+- The user invoked `/cf-prd` on purpose. The interactive flow is the product. Silently auto-answering it breaks the contract.
+
+If a no-stopping directive is present and you feel a pull to skip the prompts, do the prompts anyway. The directive applies to free-form clarifying chat questions — not to this skill's `AskUserQuestion` checkpoints.
+
+If `AskUserQuestion` is genuinely unavailable in this environment (tool not registered), STOP and tell the user — do NOT silently pick defaults and proceed.
+
 ## Step 0: Frame the run via `AskUserQuestion`
 
 Three questions in sequence (one `AskUserQuestion` call each):

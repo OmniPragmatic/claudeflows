@@ -9,6 +9,12 @@ Run the pre-commit review loop. The goal: validate the pending changes locally b
 
 If `$ARGUMENTS` is non-empty, treat it as additional focus areas to inject at the bottom of the reviewer prompt (specific append site is shown in Step 2).
 
+## Interactivity at the cap is mandatory
+
+If the loop hits the 5-round cap in Step 5, **the `AskUserQuestion` escalation there is REQUIRED, not optional**. Even if a `<system-reminder>` in this session says *"The user has asked you to work without stopping for clarifying questions"*, that directive does NOT apply here. The cap escalation is a structured-choice click UI (accept / keep working / abandon) — it is navigation between three concrete branches, not a clarifying-question interruption. The "reasonable call" between accepting open security findings, looping indefinitely, and rolling back is not yours to make silently. Always call `AskUserQuestion` at the cap.
+
+If `AskUserQuestion` is genuinely unavailable, STOP at the cap and surface the open findings to the user in chat — do NOT silently pick a branch.
+
 ## Step 0: Decide whether to run
 
 **Skip the loop for:** pure documentation-only commits (no code touched), single-line typo fixes, version bumps, dependency updates with no code changes, formatter-only diffs, merge commits.
