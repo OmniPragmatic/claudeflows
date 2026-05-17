@@ -34,7 +34,7 @@ Six slash commands become available, all prefixed `/cf-`:
 | `/cf-brainstorm <rough idea>` | Early-stage concept design. Multiple Goldfish run in parallel with different lenses (technical / business / UX / contrarian / market research). Output: a concepts brief. |
 | `/cf-prd <idea \| feature \| #issue>` | Turn an idea into a Product Requirements Document. Codebase grounding, structured gap-filling, deep research. Output: a PRD with explicit Open Questions. |
 | `/cf-bug <description \| #issue \| URL>` | Bug fix flow. Problem doc → Goldfish diagnosis check → failing test → fix → precommit review → test gate. |
-| `/cf-feature <description \| #issue \| URL>` | Feature flow. Scope confirm → design doc → three-Goldfish design check (readiness / critic / implementer) → implement → precommit review → test gate. |
+| `/cf-feature <description \| #issue \| URL>` | Feature flow. Scope confirm → design doc → three-Goldfish design check (comprehension / critic / readiness) → implement → precommit review → test gate. Also supports `implement T<N> from <PRD path>` for **multi-session PRD-task mode** (1.3+) — load a task from a `/cf-prd`-generated Implementation roadmap, run the full flow, and emit a paste-ready carry-over command for the next session. |
 | `/cf-precommit-review` | Independent reviewer loop on the pending diff. Lint + typecheck + tests as pre-flight, then a fresh subagent reviews the diff cold. |
 
 Implementation skills (`bug`, `feature`) stop short of committing. You authorize the commit explicitly.
@@ -63,7 +63,10 @@ flowchart LR
     C -- code change --> E["precommit-review"]
     D -- code change --> E
     E -- validated change --> F(["commit"])
+    E -- next task --> C
 ```
+
+> `feature` runs `precommit-review` once per task in PRD-task mode (1.3+); each iteration is a fresh `/cf-feature` session opened from the previous session's carry-over command, and each session runs through `precommit-review` before emitting the carry-over. The loop terminates when the PRD has no unblocked tasks remaining; the user commits each task's diff at its own cadence.
 
 Pick the stage that matches what you have:
 
@@ -194,7 +197,7 @@ sequenceDiagram
     participant R3 as Goldfish (UX/Compliance/Perf)
 
     U->>E: idea or #issue
-    E->>U: Q1 depth / Q2 research / Q3 output target
+    E->>U: Q1 depth / Q-sessions multi-session? / Q2 research / Q3 output target
     U->>E: framing answers
 
     par Wave 1 — codebase grounding
@@ -204,6 +207,7 @@ sequenceDiagram
     GA-->>E: file:line citations
     GB-->>E: stack, constraints, patterns
     E->>U: CODEBASE BRIEF + numbered gap list (G1..Gn)
+    Note over E: If Q-sessions = "Let the Elephant decide",<br/>resolve to Yes/No now (≥3 layers OR ≥6 gaps → Yes)
 
     U->>E: which gaps to fill
     loop For each selected gap
@@ -220,12 +224,16 @@ sequenceDiagram
     R2-->>E: findings + sources (lens complete)
     R3-->>E: findings + sources (lens complete)
 
-    E->>E: synthesize PRD (deferred gaps → Open Questions)
+    E->>E: synthesize PRD (deferred gaps → Open Questions;<br/>Implementation roadmap if multi-session, else Implementation hints)
     E->>U: full PRD
     U->>E: approve / refine sections / restart
     opt Output
         E->>E: write to disk / memory
-        E-->>U: "Run /cf-feature <summary> when ready"
+        alt Multi-session AND Q3 includes Hand off
+            E-->>U: "Run /cf-feature implement T1 from <PRD path> when ready"
+        else Single-session AND Q3 includes Hand off
+            E-->>U: "Run /cf-feature <descriptive verb + summary> when ready"
+        end
     end
 ```
 
@@ -289,6 +297,49 @@ sequenceDiagram
     E->>E: run test gate + UI walkthrough (golden + edge case)
     E->>U: final report (STOP — no commit)
 ```
+
+#### Multi-session PRD-task mode (1.3+)
+
+Large features that span multiple `/cf-feature` sessions — e.g. a PRD with a billing system covering customers, invoices, payments, webhooks — drift fast when each session re-interprets the PRD from scratch. The 1.3+ flow fixes this structurally:
+
+1. **`/cf-prd` with `Q-sessions = Yes`** generates an `## Implementation roadmap` section in the PRD. Each task (T1, T2, ..., Tn) has its own fully-specified `Scope`, `Surfaces touched`, `Interfaces`, `Verification`, plus a paste-ready `Next command`. The PRD itself is now the durable Elephant memory across sessions.
+2. **`/cf-feature implement T<N> from <PRD path>`** loads T<N> verbatim and uses it to seed the design doc. The principle (Rensin's article): *"the design doc is the new source code"* — here, the PRD task slot IS the design doc seed. The Elephant does NOT re-interpret it.
+3. **`/cf-feature` Step 8 close-out** writes `T<N>.Status: Done` to the PRD and emits a **paste-ready carry-over command** — a single slash command pointing at T<M>. No 1-2 page narrative. Open a fresh session, paste, repeat.
+
+Carry-over format (character-level — no re-narration of T<M>'s scope):
+
+```
+=== NEXT SESSION CARRY-OVER ===
+
+/cf-feature implement T2 from docs/prds/billing-2026-05-17.md
+
+(T2's scope, interfaces, verification, and dependencies are in docs/prds/billing-2026-05-17.md §Implementation roadmap, T2. Open a fresh session and paste the command above — do not continue in this session.)
+```
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant Sa as Session A
+    participant PRD as PRD on disk
+    participant Sb as Session B
+
+    U->>Sa: /cf-feature implement T1 from PRD
+    Sa->>PRD: read T1 verbatim (no re-interpretation)
+    Sa->>Sa: design doc seeded from T1 → Goldfish gates → implement
+    Sa-->>U: Step 8 G-step8-confirm (Yes / Carry-over only / Stop)
+    opt User picks "Yes — update PRD and emit carry-over"
+        Sa->>PRD: Edit T1.Status: Not started → Done
+    end
+    Sa-->>U: === NEXT SESSION CARRY-OVER === /cf-feature implement T2 from PRD
+    Note over U,Sb: User opens FRESH session
+    U->>Sb: paste carry-over command
+    Sb->>PRD: read T2 verbatim — same discipline, no drift
+```
+
+What's lost vs. just keeping mental state across sessions: nothing meaningful — the PRD is the same document the Elephant would build up internally, but persisted. What's gained: a fresh `/cf-feature` session 3 weeks later can pick up T<M> in 30 seconds and produce identical work to a session running today, because the spec is the same file.
+
+The only state field the PRD tracks is `Status: Not started | Done`. There is no `In progress` middle state — the user's git branch is the source of truth for "what's currently being worked on", not the PRD. If the user invokes standalone `/cf-feature` on a branch whose name suggests T<N> work (e.g. `t2-billing-webhooks`) AND a PRD with T2 exists, the skill surfaces a one-click `G-branch-hint` AskUserQuestion to catch the common case of "you meant PRD-task mode, right?"
 
 ---
 
