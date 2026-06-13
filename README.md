@@ -21,7 +21,7 @@ ClaudeFlows uses the article's two roles:
 **This repo's marketplace:**
 
 ```
-/plugin marketplace add omniprag/claudeflows
+/plugin marketplace add OmniPragmatic/claudeflows
 ```
 
 > If your Claude shows "/plugin isn't available in this environment," run Claude CLI from the terminal and add the plugin. Reload skills and restart Claude Desktop app or VSCode addon, and `cf-` commands should become available.
