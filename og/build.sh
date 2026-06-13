@@ -62,7 +62,7 @@ make_image() {
 
     <text x="${TEXT_X}" y="$((H - 64))"
           font-size="${URL_SIZE}" font-weight="500" letter-spacing="0.3"
-          fill="${SUBTLE}">omniprag.github.io/claudeflows</text>
+          fill="${SUBTLE}">omnipragmatic.github.io/claudeflows</text>
   </g>
 </svg>
 SVG
