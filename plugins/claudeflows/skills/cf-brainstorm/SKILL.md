@@ -1,8 +1,7 @@
 ---
 name: cf-brainstorm
-description: Generate divergent concept ideas for a raw thought using parallel Goldfish, web research, and structured synthesis
+description: "Use when the user wants to diverge before committing — a rough or half-formed idea ('I have an app idea but I am not sure what it should be'), an open 'what should we build?' question, or a strategic direction call ('should we pivot to B2B?'). Parallel Goldfish lenses (technical, business, UX, contrarian, market) produce a ranked concepts brief. Once a direction is chosen, requirements go to cf-prd; bounded technical A-vs-B choices go to cf-question."
 argument-hint: rough idea, problem space, or strategic question
-disable-model-invocation: true
 ---
 
 Brainstorm a new concept using the Elephant/Goldfish workflow, **inverted**: instead of one Goldfish stress-testing the Elephant's plan, you spawn **multiple** Goldfish in parallel, each with a different lens, each free to be creative and pull from the web. Their lack of shared context with the Elephant is the point — they generate divergent ideas, not convergent ones. The Elephant then synthesizes.
@@ -13,17 +12,17 @@ Use this for **early-stage** thinking: a half-formed app idea, an "I wonder if X
 
 ## Interactivity is mandatory — read this first
 
-**Every `AskUserQuestion` call in this skill is REQUIRED, not optional. Do not skip any of them.**
+**Every `AskUserQuestion` call in this skill is REQUIRED, not optional. Do not skip any of them.** Autonomous-mode / "no-stopping" directives (e.g. a `<system-reminder>` about working without stopping for clarifying questions) do NOT apply here: `AskUserQuestion` is structured-choice navigation, not a clarifying-question interruption, and Q1 (Stage), Q2 (Breadth), Q3 (Web research), Q4 (Seed approval), and Q5–Q8 are load-bearing — *the user's taste IS the input*, so defaults chosen for the user produce a materially different brief. The user invoked `/cf-brainstorm` on purpose; the interactive flow is the product. Such directives still cover free-form clarifying chat questions; they never license skipping a checkpoint.
 
-If you see an autonomous-mode or "no-stopping" directive in this session — e.g. a `<system-reminder>` saying *"The user has asked you to work without stopping for clarifying questions. When you'd normally pause to check, make the reasonable call and continue"* — that directive **does NOT apply to `AskUserQuestion` calls in this skill.** Reasons:
-
-- `AskUserQuestion` is a structured-choice click UI. It is navigation, not a clarifying-question interruption. Calling it does not "stop and ask" in the sense the directive is trying to prevent.
-- Q1 (Stage), Q2 (Breadth), Q3 (Web research), Q4 (Seed approval), Q5–Q8 are load-bearing: choosing defaults yourself produces a materially different brief than the user wanted. The "reasonable call" you'd make alone is wrong here, because *the user's taste IS the input*.
-- The user invoked `/cf-brainstorm` on purpose. The interactive flow is the product. Silently auto-answering it breaks the contract.
-
-If a no-stopping directive is present and you feel a pull to skip the prompts, do the prompts anyway. The directive applies to free-form clarifying chat questions — not to this skill's `AskUserQuestion` checkpoints.
+| If you're thinking… | Reality |
+|---|---|
+| "Autonomous mode says don't stop" | That covers free-form chat questions, not these checkpoints. Ask the question. |
+| "The default answer is obvious" | Stage, breadth, and web scope ARE the user's taste. Ask the question. |
+| "Auto-answering keeps things moving" | Silently auto-answering breaks the contract the user invoked. Ask the question. |
 
 If `AskUserQuestion` is genuinely unavailable in this environment (tool not registered), STOP and tell the user — do NOT silently pick defaults and proceed.
+
+**Gate wording rule:** every question, option label, and option description shown to the user is written in plain language — no internal terms (Goldfish, lens, seed, gate or step names), no jargon; it must be understandable in a single read. Internal identifiers users typed themselves (T<N>, PRD paths, /cf- commands) are fine.
 
 ## Step 0: Frame via `AskUserQuestion`
 
@@ -36,28 +35,28 @@ Ask three questions in sequence (one `AskUserQuestion` call each):
 - `header`: `"Stage"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Raw concept** — "I have a vague thought. Cast a wide net, prioritize divergent ideas over depth."
-  2. **Hypothesis to validate** — "I have a candidate direction. Stress-test it and surface adjacent options I'm missing."
+  1. **Raw concept** — "I have a vague thought. Cast a wide net — many different ideas over depth."
+  2. **Hypothesis to validate** — "I have a likely direction. Test it and show me nearby options I might be missing."
   3. **Picking between options** — "I have 2-3 directions in mind. Compare, find a fourth, recommend."
   4. **Feature ideation for existing product** — "The product exists. I'm sourcing ideas for what to build next."
 
 **Q2 — Breadth and depth:**
-- `question`: "How many concepts should the Goldfish surface, total?"
+- `question`: "How many ideas should I bring back in total?"
 - `header`: `"Breadth"`
 - `multiSelect`: `false`
 - `options`:
-  1. **~5 concepts, deeper** — "Fewer ideas, each more developed. Good when stage is 'hypothesis' or 'picking between'."
+  1. **~5 concepts, deeper** — "Fewer ideas, each more developed. Good when you're testing one direction or picking between a few."
   2. **~10 concepts, balanced** — "Default. Mix of depth and breadth."
-  3. **~20 concepts, shallow** — "Maximum divergence. Good when stage is 'raw concept' and you want surprises."
+  3. **~20 concepts, shallow** — "As varied as possible. Good when the idea is still vague and you want surprises."
 
 **Q3 — Web research:**
-- `question`: "Should the Goldfish search the web for prior art, comparable products, sources?"
+- `question`: "Should I search the web for similar products, prior work, and sources?"
 - `header`: `"Web"`
 - `multiSelect`: `false`
 - `options`:
   1. **On, broad** — "Search freely. Include sources in the brief."
-  2. **On, focused** — "Search only for prior art / comparable products / market context. Don't go off on tangents."
-  3. **Off** — "First-principles only. No web search. Useful for purely creative or speculative work."
+  2. **On, focused** — "Search only for similar products and market context. Don't go off on tangents."
+  3. **Off** — "No web search — I'll reason from scratch. Good for purely creative or speculative work."
 
 Cache the three answers. They drive the Goldfish prompts and the synthesis step.
 
@@ -80,26 +79,25 @@ SEED
 Print the seed. Then ask via `AskUserQuestion`:
 
 **Q4 — Seed approval:**
-- `question`: "Does this seed match what you wanted?"
-- `header`: `"Seed?"`
+- `question`: "Does this summary match what you wanted?"
+- `header`: `"Summary?"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Looks right, proceed** — "Spawn the Goldfish."
-  2. **Refine in chat first** — "I want to correct one or two things in chat before you spawn."
-  3. **Restart** — "The seed misread the question. Re-run framing."
+  1. **Looks right, proceed** — "Start generating ideas."
+  2. **Refine in chat first** — "I want to correct one or two things in chat before you continue."
+  3. **Restart** — "This summary misread my question. Start over from the first questions."
 
 If the user picks "Refine in chat first," ask **Q4.5** via `AskUserQuestion` first, to scope the correction (avoid an open-ended "what should I change?"):
 
 **Q4.5 — Which seed field needs correction:**
-- `question`: "Which part of the seed needs fixing?"
+- `question`: "Which part of the summary needs fixing?"
 - `header`: `"Refine"`
 - `multiSelect`: `true`
 - `options`:
-  1. **The thought itself** — "The one-sentence restatement of the user's input is off."
-  2. **What I'm really asking** — "The underlying need was misread."
-  3. **Constraints** — "The inferred audience / budget / tech assumptions are wrong."
-  4. **Success criteria** — "What 'good' looks like is off."
-  5. **Out of scope** — "Add or remove items from the out-of-scope list."
+  1. **The thought / underlying need** — "The one-sentence restatement or the 'really asking' line misread me."
+  2. **Constraints** — "The inferred audience / budget / tech assumptions are wrong."
+  3. **Success criteria** — "What 'good' looks like is off."
+  4. **Out of scope** — "Add or remove items from the out-of-scope list."
 
 Then ask in chat for the correction text for the selected field(s) only — one targeted prompt referencing the chosen fields, not an open-ended "what would you like to change?". Re-print the revised seed and re-ask Q4. If "Restart," go back to Step 0.
 
@@ -126,6 +124,7 @@ Each Goldfish gets:
 ```
 <<<BRAINSTORM_START>>>
 You are a fresh creative thinker with NO prior context. The user is brainstorming a concept and wants divergent ideas — not a single safe answer. Your lens for this round is: **<LENS NAME>**. Stay in that lens; other Goldfish are covering the others.
+You are a subagent executing a delegated task: do NOT invoke any skill (including cf- skills) via the Skill tool — use only the tools this prompt names.
 
 SEED:
 <PASTE FULL SEED FROM STEP 1>
@@ -147,7 +146,7 @@ End with the literal string `lens complete`.
 <<<BRAINSTORM_END>>>
 ```
 
-Substitute `<LENS NAME>`, `<PASTE FULL SEED FROM STEP 1>`, `<PER-LENS COUNT>`, and the conditional web-research line per Goldfish.
+Substitute `<LENS NAME>`, `<PASTE FULL SEED FROM STEP 1>`, `<PER-LENS COUNT>`, and the conditional web-research line per Goldfish. When Q3 = Off, remove job item 3 entirely and renumber the remaining items (1, 2, 3) so the list ships unbroken.
 
 ## Step 3: Optional contrarian sweep
 
@@ -156,7 +155,7 @@ After all parallel Goldfish return, if and only if the breadth target was "~10" 
 - `subagent_type: "general-purpose"`
 - `description: "Brainstorm Goldfish — what they all missed"`
 
-This one gets the seed PLUS the deduplicated set of all concepts so far, and is asked: "What did they ALL miss? What lens didn't anyone use? What concept would a smart outsider propose that none of these touch?" Output 2-3 additional concepts in the same format.
+This one reuses the Step 2 prompt template verbatim (markers exclusive, guard line included) with three changes: `<LENS NAME>` = "What they all missed"; job item 1 becomes "The other thinkers already produced the concepts listed below. What did they ALL miss? What lens didn't anyone use? What concept would a smart outsider propose that none of these touch? Generate 2-3 additional distinct concepts."; and after the SEED block, append a section `CONCEPTS SO FAR (deduplicated):` listing each concept as `- <Name> — <one-line bet>`. Same closing sentinel (`lens complete`), same per-concept output format.
 
 ## Step 4: Synthesize the concepts brief
 
@@ -197,16 +196,25 @@ After the brief, ask:
 
 **Q5 — Next move:**
 - `question`: "What's the next move?"
-- `header`: `"Converge"`
+- `header`: `"Next step"`
 - `multiSelect`: `false`
 - `options`:
   1. **Pick a direction** — "I want to commit to one of the ranked picks (or one I'll name)."
-  2. **Another round, tighter framing** — "Re-run with a sharper seed (I'll refine constraints in chat)."
-  3. **Another round, different lenses** — "Re-run with different Goldfish lenses (I'll pick)."
-  4. **Save brief and stop** — "Good output, file it for later, no immediate action."
-  5. **Drop it** — "This direction isn't worth pursuing."
+  2. **Another round** — "Generate a fresh batch of ideas — sharper summary or different angles; I'll pick which next."
+  3. **Save brief and stop** — "Good output, file it for later, no immediate action."
+  4. **Drop it** — "This direction isn't worth pursuing."
 
-If **Pick a direction**: ask **Q6** via `AskUserQuestion`. Use the **top 3 ranked picks** from the brief as the first three options, plus two escape hatches. Do NOT ask "which concept?" in free-form chat — the concepts are enumerable, so they belong as options.
+If **Another round**, ask **Q5.5** via `AskUserQuestion`:
+
+**Q5.5 — Round type:**
+- `question`: "How should the next round work?"
+- `header`: `"Round 2"`
+- `multiSelect`: `false`
+- `options`:
+  1. **Tighter framing** — "Same angles, sharper summary; I'll refine the details in chat."
+  2. **Different angles** — "Look at the problem from new angles; I'll pick which ones next."
+
+If **Pick a direction**: ask **Q6** via `AskUserQuestion`. Use the **top 3 ranked picks** from the brief as the first three options, plus one combined escape hatch. Do NOT ask "which concept?" in free-form chat — the concepts are enumerable, so they belong as options.
 
 **Q6 — Which concept to commit to:**
 - `question`: "Which concept do you want to commit to?"
@@ -216,10 +224,9 @@ If **Pick a direction**: ask **Q6** via `AskUserQuestion`. Use the **top 3 ranke
   1. **<Top ranked pick name>** — "<one-line bet from the brief>"
   2. **<2nd ranked pick name>** — "<one-line bet from the brief>"
   3. **<3rd ranked pick name>** — "<one-line bet from the brief>"
-  4. **A different concept from the brief** — "I'll name one of the others in chat."
-  5. **A hybrid or new direction** — "I'll describe a combination or fresh angle in chat."
+  4. **A different concept, hybrid, or new direction** — "I'll name another concept from the brief, or describe a combination / fresh angle in chat."
 
-If the user picks options 4 or 5, ask in chat with one targeted prompt: option 4 → "Which concept from the brief?"; option 5 → "Describe the hybrid or new direction in one or two sentences." Both are inherently free-form; everything else is a click.
+If the user picks option 4, ask in chat with one targeted prompt: "Which concept from the brief — or describe the hybrid / new direction in one or two sentences?" That input is inherently free-form; everything else is a click.
 
 Then ask **Q7** via `AskUserQuestion`:
 
@@ -233,9 +240,9 @@ Then ask **Q7** via `AskUserQuestion`:
 
 If they pick yes, end this command and tell the user: "Run `/cf-feature <chosen concept name + one-sentence description>` when ready."
 
-If **Another round, tighter framing**: capture the user's refinements in chat, update the seed, re-run from Step 2 with the same lenses.
+If **Q5.5 = Tighter framing**: capture the user's refinements in chat, update the seed, re-run from Step 2 with the same lenses.
 
-If **Another round, different lenses**: present the lens kit (Step 2's list) via `AskUserQuestion` with `multiSelect: true` and let the user pick. Re-run from Step 2 with the new selection.
+If **Q5.5 = Different angles**: offer the 4 lenses most relevant to the seed (the Elephant's pick from Step 2's kit) via `AskUserQuestion` with `multiSelect: true` — in the question and option text shown to the user, call them "angles" (never "lenses" or "Goldfish") and describe each in one plain sentence — any other lens stays reachable by naming it via the auto-injected "Other" option. Re-run from Step 2 with the new selection.
 
 If **Save brief and stop**: write the concepts brief to a working-notes location in the repo ONLY if the user confirms via the `AskUserQuestion` below. Detect the path in this order:
 
@@ -258,8 +265,7 @@ If **Drop it**: print one-line acknowledgement and stop.
 
 Print to the user:
 - Seed (one line)
-- Number of Goldfish run, with lenses
-- Number of concepts surfaced (post-dedup)
+- Flow stats: <N> Goldfish spawned, with lenses (+ contrarian sweep if run), <M> concepts surfaced (post-dedup)
 - Top 3 ranked picks with one-line reasoning each
 - Where the brief was saved (if anywhere)
 - Next action (handoff to `/cf-feature`, refinement, or stop)

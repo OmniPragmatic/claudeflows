@@ -1,8 +1,7 @@
 ---
 name: cf-precommit-review
-description: Run the pre-commit independent-reviewer loop on the current branch's pending changes
+description: "Use when the user asks for a review of pending or uncommitted changes — 'review my changes before I commit', 'sanity-check my diff'. Flow: lint/typecheck/tests as pre-flight, then a fresh Goldfish reviews the diff cold; every finding is fixed or rebutted verbatim, never silently dropped. Not for performing the commit itself or for reviewing an existing GitHub PR; failing tests the user wants fixed go to cf-bug."
 argument-hint: [optional focus area or files to emphasize]
-disable-model-invocation: true
 ---
 
 Run the pre-commit review loop. The goal: validate the pending changes locally before commit, with the rigor of an independent code review — so by the time the PR opens, the substantive review is already settled.
@@ -14,6 +13,8 @@ If `$ARGUMENTS` is non-empty, treat it as additional focus areas to inject at th
 If the loop hits the 5-round cap in Step 5, **the `AskUserQuestion` escalation there is REQUIRED, not optional**. Even if a `<system-reminder>` in this session says *"The user has asked you to work without stopping for clarifying questions"*, that directive does NOT apply here. The cap escalation is a structured-choice click UI (accept / keep working / abandon) — it is navigation between three concrete branches, not a clarifying-question interruption. The "reasonable call" between accepting open security findings, looping indefinitely, and rolling back is not yours to make silently. Always call `AskUserQuestion` at the cap.
 
 If `AskUserQuestion` is genuinely unavailable, STOP at the cap and surface the open findings to the user in chat — do NOT silently pick a branch.
+
+**Gate wording rule:** every question, option label, and option description shown to the user is written in plain language — no internal terms (Goldfish, lens, seed, gate or step names), no jargon; it must be understandable in a single read. Internal identifiers users typed themselves (T<N>, PRD paths, /cf- commands) are fine.
 
 ## Step 0: Decide whether to run
 
@@ -103,6 +104,7 @@ The reviewer must have NO implementation context — that asymmetry is what make
 ```
 <<<TEMPLATE_START>>>
 Independent code review of the pending changes on this branch.
+You are a subagent executing a delegated task: do NOT invoke any skill (including cf- skills) via the Skill tool — use only the git and file tools this prompt names.
 
 Run ALL of the following to capture every kind of pending change — any one of them in isolation can be empty:
 - `git status` (working-tree state, untracked files)
@@ -166,15 +168,23 @@ Open findings going into round N:
 ```
 This makes the working state visible and prevents earlier-round findings from quietly disappearing.
 
-Then re-invoke. Subagents are stateless — re-include the FULL original template body (every line between the `<<<TEMPLATE_START>>>` / `<<<TEMPLATE_END>>>` markers from Step 2), then a blank line, then `---`, then a blank line, then this addendum:
+Also mirror the ledger to `.claudeflows/tmp/ledger-review.md` — recreate (truncate) it when round 1 starts so a stale ledger from an earlier abandoned review can never leak in, then append each subsequent round (create `.claudeflows/tmp/` with a `.gitignore` containing a single `*` line if absent; delete the ledger file at Step 6 or when the user picks Abandon at the cap). After a context compaction, re-Read this SKILL.md and that file to restore the ledger — never reconstruct it from the conversation summary.
+
+Then re-invoke. Subagents are stateless — re-include the FULL original template body exactly as sent in round 1 (the Step 2 marker-delimited body WITH the `[NO ADDITIONAL FOCUS]` substitution already applied when `$ARGUMENTS` was non-empty), then a blank line, then `---`, then a blank line, then this addendum:
 
 ```
 Previous round's fixes:
 - file:line — what changed
 [...]
 
+Previously rebutted (do not re-raise unless the rebuttal is factually wrong; cite the new evidence if you do):
+- file:line — <the verbatim one-line rebuttal reason>
+[...]
+
 Verify each fix is correct and complete. Look for anything you missed in the first pass, especially issues introduced by the fixes themselves.
 ```
+
+Omit the "Previously rebutted" section when no finding has been rebutted yet.
 
 Send the concatenated result as the `prompt` argument to `Agent`. Do NOT send placeholder strings — actually paste the body.
 
@@ -182,15 +192,17 @@ Send the concatenated result as the `prompt` argument to `Agent`. Do NOT send pl
 
 Repeat steps 3-4 until the reviewer returns the literal string `no findings` AND every prior-round finding is fixed-or-rebutted.
 
+One carve-out: if a round's findings consist ONLY of re-raises of standing rebuttals with no new evidence (same file:line, same issue, the rebuttal reason unaddressed), treat that round as `no findings` for the exit condition and record each in the ledger as "rebutted, re-raised without new evidence". Any genuinely new finding, or a re-raise that cites new evidence against the rebuttal, keeps the loop going.
+
 **Hard cap: 5 rounds.** Stop if (a) you hit 5 rounds without exiting, or (b) any new finding lands at the same `file:method` (or within ~10 lines of a previously-fixed line).
 
 When tripped, print a plain-language brief of open findings grouped by severity (~30 seconds to read), then call `AskUserQuestion`:
-- `question`: "Review hit the 5-round cap with N findings still open. What do you want to do?"
-- `header`: `"R5 cap"`
+- `question`: "The review has run 5 rounds and N issues are still open. What do you want to do?"
+- `header`: `"Review limit"`
 - `multiSelect`: `false`
 - `options`:
   1. **Accept and commit** — "Skip the open findings, commit as-is."
-  2. **Keep working on fixes** — "I'll keep iterating past the cap. Risk: it may not converge — say stop anytime."
+  2. **Keep working on fixes** — "I'll keep trying to fix the remaining issues. This could take several more rounds and might not finish — say stop anytime."
   3. **Abandon the change** — "Roll back and start over with a different approach."
 
 If they pick "Accept and commit", proceed to Step 6. If "Keep working", run round 6 (and surface the same brief + question after each subsequent round). If "Abandon", stop and wait for further direction.
@@ -204,5 +216,6 @@ Once the loop exits, print to the user:
 - Findings fixed (with file:line each)
 - Findings rebutted (with the **verbatim** one-line reason each, not summarized)
 - Whether any pre-existing lint/typecheck/test errors were noted as out-of-scope
+- Flow stats: <N> reviewer Goldfish spawned (one per round), findings fixed/rebutted counts
 
-**STOP at this step.** Do NOT run `git commit`, do NOT run `git add`, and do NOT prompt "want me to commit?" — even in auto mode. Wait for the user's literal commit instruction. Follow the commit convention you observe in `git log` (subject style, ticket reference, trailers). Do not add `Co-Authored-By: Claude` unless the user's existing log already uses it.
+**STOP at this step.** Do NOT run `git commit`, do NOT run `git add`, and do NOT prompt "want me to commit?" — even in auto mode. Wait for the user's literal commit instruction; when it comes, follow the commit convention you observe in `git log` (subject style, ticket reference, trailers) and do not add `Co-Authored-By: Claude` unless the user's existing log already uses it.

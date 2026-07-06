@@ -26,6 +26,16 @@ ClaudeFlows uses the article's two roles:
 
 > If your Claude shows "/plugin isn't available in this environment," run Claude CLI from the terminal and add the plugin. Reload skills and restart Claude Desktop app or VSCode addon, and `cf-` commands should become available.
 
+### Try it now (2 minutes)
+
+After a restart, run the read-only flow first — in any repo:
+
+```
+/cf-question "where does <something you know> live in this repo?"
+```
+
+2-3 Goldfish sweep the repo in parallel and you get a cited, sub-250-word answer in about a minute. No files change, nothing is committed. If you saw lanes spawn and citations come back, everything is wired — graduate to `/cf-bug` or `/cf-feature` on real work.
+
 Six slash commands become available, all prefixed `/cf-`:
 
 | Skill | When to use |
@@ -38,6 +48,8 @@ Six slash commands become available, all prefixed `/cf-`:
 | `/cf-precommit-review` | Independent reviewer loop on the pending diff. Lint + typecheck + tests as pre-flight, then a fresh subagent reviews the diff cold. |
 
 Implementation skills (`bug`, `feature`) stop short of committing. You authorize the commit explicitly.
+
+**Auto-routing (1.7+).** The skills are also model-invocable: mention a bug, a feature, or a diff to review in plain words, and Claude announces and invokes the matching `/cf-` flow itself ("I'll use cf-bug for that"). Two mechanisms do the matching — trigger-shaped skill descriptions ("Use when…") and a one-line `SessionStart` routing hint. Typing the slash command still works exactly as before and always wins. Per-repo opt-out: create an empty `.claudeflows/quiet` file in the directory you start Claude from (usually the repo root; add `.claudeflows/` to that repo's `.gitignore` so the marker stays out of `git status`), or set `CLAUDEFLOWS_QUIET=1`, to silence both SessionStart hooks. To pin any skill back to manual-only invocation everywhere, re-add `disable-model-invocation: true` to its SKILL.md frontmatter.
 
 Usage examples:
 
@@ -434,6 +446,42 @@ sequenceDiagram
 The plugin is **stack-agnostic**. On every invocation the skill reads your repo's manifests (`package.json`, `Gemfile`, `pubspec.yaml`, `pyproject.toml`, `go.mod`, etc.), version managers (`mise.toml`, `.tool-versions`, `.nvmrc`), CI config (`.github/workflows/`), and `CLAUDE.md` itself, then picks the right lint / typecheck / test / e2e commands for that repo. No install-time configuration.
 
 Tested patterns include Rails (with mise + Brakeman + MiniTest), Flutter (with build_runner + Drift), Node + Vite + Cloudflare Workers, Python (Django / FastAPI), and Go.
+
+## Compaction resilience (1.7+)
+
+The plugin ships a `SessionStart` hook (matcher: `compact`) that fires right after a context compaction and injects a one-line reminder: if a `/cf-` skill is mid-flight, re-read its SKILL.md before the next step — templates, sentinels, and gate specs must never be reconstructed from memory. Long sessions summarize away the exact wording the flows rely on; the hook restores the discipline mechanically instead of trusting the summary. Both hook scripts are tiny sh/cmd polyglots (Windows-safe, no bash dependency) and honor the `.claudeflows/quiet` / `CLAUDEFLOWS_QUIET=1` opt-out.
+
+Also since 1.7: `/cf-feature`'s three-Goldfish design check hands the design doc to each pass as a transient file under `.claudeflows/tmp/` (self-git-ignored, cleaned up at flow end) instead of pasting the doc into all three prompts each round — same asymmetry, lower token cost. In-flight flows also keep a small progress ledger in the same directory, so a compaction or crash doesn't lose gate state; the precommit reviewer additionally verifies the diff against the design doc when one exists (spec deviations surface as ordinary findings).
+
+## Open Knowledge Format (OKF)
+
+The durable docs ClaudeFlows writes are emitted as [Open Knowledge Format](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing) docs — Google's vendor-neutral spec for agent-readable knowledge: a markdown body with a small YAML frontmatter block, where markdown links between docs form a knowledge graph. Producing OKF-shaped artifacts means the same docs are walkable by other agents, visualizers, and search tools — not just by ClaudeFlows.
+
+**What carries OKF frontmatter today (1.7+):**
+
+| Skill | Artifact | OKF `type` | When |
+|---|---|---|---|
+| `/cf-prd` | PRD | `PRD` | Whenever the PRD is saved to disk (Q3 "Save as a PRD doc"). |
+| `/cf-prd` | memory nugget | (your `type`) | "Save to memory" writes cross-cutting policies to a `docs/okf/` bundle when one exists or you opt in; otherwise falls back to CLAUDE.md. |
+| `/cf-feature` | design doc | `Design Doc` | Only when the design doc is written to disk (substantial features); chat-only design docs are unaffected. |
+
+The frontmatter is **additive** — it sits above the existing body and does not change the `**Status:**` / `**Surfaces touched:**` field labels the PRD-task parser relies on. The block:
+
+```yaml
+---
+type: PRD
+title: Multi-tenant CSV export
+description: Per-company export of orders to CSV with audit logging.
+resource: https://github.com/acme/app/issues/42
+tags: [prd, export, billing]
+timestamp: 2026-06-19T14:30:00Z
+generator: claudeflows/1.7.1
+---
+```
+
+Cross-links (PRD → task → design doc, plus links to the seeding issue and CLAUDE.md) are written as ordinary markdown links so the saved docs form a navigable bundle.
+
+**Not yet:** the Goldfish don't *consume* OKF bundles for grounding — they still assemble context from CLAUDE.md, `docs/`, and manifests directly. Feeding an existing OKF bundle into the Goldfish context-assembly step is the natural next step, planned for a later release. `/cf-bug` writes its problem doc in-conversation (never to disk), so it emits no OKF artifact.
 
 ## Project-specific commands
 

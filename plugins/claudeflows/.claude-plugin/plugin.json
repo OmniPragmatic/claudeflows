@@ -1,21 +1,24 @@
 {
   "name": "claudeflows",
-  "description": "Reusable workflow for software work with Claude Code, built around the Elephant/Goldfish pattern: a fresh subagent (the Goldfish) stress-tests a problem doc, design doc, or diff while your context-rich session (the Elephant) stays in the loop. Stages: brainstorm → PRD → bug / feature → precommit-review.",
-  "version": "1.3.0",
+  "description": "Six reusable workflows for software work with Claude Code, built around the Elephant/Goldfish pattern: a fresh subagent (the Goldfish) stress-tests a problem doc, design doc, or diff while your context-rich session (the Elephant) stays in the loop. Flows: question, brainstorm, PRD, bug, feature, precommit-review.",
+  "version": "1.7.1",
   "author": {
     "name": "Vlad Shvedov",
     "url": "https://omniprag.com"
   },
-  "repository": "https://github.com/omniprag/claudeflows",
-  "homepage": "https://omniprag.github.io/claudeflows/",
+  "repository": "https://github.com/OmniPragmatic/claudeflows",
+  "homepage": "https://omnipragmatic.github.io/claudeflows/",
   "license": "MIT",
   "keywords": [
     "workflow",
     "code-review",
     "prd",
     "brainstorm",
+    "question",
     "agent",
     "subagent",
-    "claudeflows"
+    "claudeflows",
+    "okf",
+    "open-knowledge-format"
   ]
 }

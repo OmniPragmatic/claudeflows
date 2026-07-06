@@ -1,8 +1,7 @@
 ---
 name: cf-question
-description: Answer a question with a fast parallel Goldfish sweep — read-only, no clarifying prompts, no code changes
+description: "Use when the user wants an evidence-backed answer, not a code change — locating or explaining behavior in this codebase ('where does X live?', 'how does Y work here?'), explaining a concept, or comparing concrete technical options (Redis vs Postgres). Read-only, cited, tightly length-capped (250-400 words by shape), no clarifying prompts. Skip trivial lookups answerable from context, debugging the user wants fixed, and product/strategy direction (use cf-brainstorm)."
 argument-hint: a question, "how does X work?", "what does Y do?", "should I A or B?"
-disable-model-invocation: true
 ---
 
 Answer a question using the Elephant/Goldfish pattern, **lite**: spawn 2-3 Goldfish in parallel, each on a narrow lane, synthesize a tight answer. The aim is a fast, well-grounded reply — not a brief, not a plan, not a diff.
@@ -42,6 +41,8 @@ Default lens kits per shape:
 
 If the question is genuinely tiny and a single Goldfish is enough (e.g. "what file defines X?"), use one. Default is two; three only when the shape demands it.
 
+If the harness's `Agent` tool supports a per-call model override, the **locator** lane MAY run on a cheaper/faster model (e.g. Haiku) — it only finds `path:line` citations. All other lanes stay on the session's model.
+
 Each Goldfish gets:
 - `description: "Question Goldfish — <lens name>"`
 - The full `$ARGUMENTS` verbatim
@@ -54,7 +55,8 @@ Each Goldfish gets:
 
 ```
 <<<QUESTION_START>>>
-You are a fresh agent with NO prior context. The user asked a question and you are one of 2-3 parallel Goldfish answering it. Stay in your lane.
+You are a fresh agent with NO prior context. The user asked a question and you are one of 1-3 parallel Goldfish answering it (possibly the only one). Stay in your lane.
+You are a subagent executing a delegated task: do NOT invoke any skill (including cf- skills) via the Skill tool — use only the tools this prompt names.
 
 USER QUESTION (verbatim):
 <PASTE $ARGUMENTS>
@@ -102,6 +104,8 @@ WHERE THE LENSES DISAGREED
 SOURCES
 - <path:line or URL>
 - <path:line or URL>
+
+Flow stats: <N> Goldfish lanes.
 ```
 
 Length budget: the whole printed answer is **under 250 words** for codebase / conceptual / mixed shapes, **under 400 words** for decision shapes. If you blow the budget, you're writing a brief — cut.

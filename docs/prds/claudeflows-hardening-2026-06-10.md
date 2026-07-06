@@ -232,6 +232,15 @@ Status legend: `Not started` | `Done` (only two states; no in-between).
 
 ## Open questions
 Deferred gap clusters (my synthesis-time calls recorded here; override anytime):
+- **Version supersession (added 2026-07-06):** releases up to 1.7.1 shipped
+  independently of this PRD after it was written (OKF frontmatter, template
+  defect fixes, auto-routing + SessionStart hooks, design-doc file handoff,
+  progress ledgers, spec-compliance review handoff, model tiering). T6's
+  `1.4.0` version literals (Scope bullet, Interfaces, Verification, G8) are
+  stale — at T6 implementation time, recompute the bump target as the next
+  minor above the currently shipped version (e.g. 1.8.0), and re-anchor T1-T3
+  surface references against the current SKILL.md files, which have drifted
+  since the 30-agent analysis.
 - **G4 — gate-batching breadth:** RESOLVED to Step-0 framing only (the verifier
   rejected the gap-stream and feature-gate merges). In T6.
 - **G5 — model-tiering:** moved to Out-of-scope follow-ups. The analysis dropped

@@ -8,22 +8,25 @@
   "plugins": [
     {
       "name": "claudeflows",
-      "description": "Five-stage Elephant/Goldfish workflow for software work in Claude Code: brainstorm, PRD, bug, feature, precommit-review.",
+      "description": "Six Elephant/Goldfish workflows for software work in Claude Code: question, brainstorm, PRD, bug, feature, precommit-review.",
       "author": {
         "name": "Vladyslav Shvedov",
         "url": "https://github.com/vshvedov"
       },
       "category": "workflow",
       "source": "./plugins/claudeflows",
-      "homepage": "https://github.com/omniprag/claudeflows",
+      "homepage": "https://github.com/OmniPragmatic/claudeflows",
       "keywords": [
         "workflow",
         "code-review",
         "prd",
         "brainstorm",
+        "question",
         "agent",
         "subagent",
-        "claudeflows"
+        "claudeflows",
+        "okf",
+        "open-knowledge-format"
       ]
     }
   ]

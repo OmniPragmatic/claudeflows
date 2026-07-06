@@ -1,8 +1,7 @@
 ---
 name: cf-feature
-description: Build a new feature using the Elephant/Goldfish workflow — design doc, Goldfish design check, implement, review, validate
+description: "Use when the user asks to build, add, create, or extend a feature or new functionality ('add dark mode', 'let users export CSV'), or to execute a PRD task ('implement T2 from docs/prds/billing.md'). Flow: design doc, three-Goldfish design check behind a hard no-code gate, layered implementation, precommit review, test gate. Restoring broken behavior is cf-bug; writing the spec itself ('build a PRD') is cf-prd; skip trivial one-line additions."
 argument-hint: feature description (what the user wants and why)
-disable-model-invocation: true
 ---
 
 Build a new feature using the Elephant/Goldfish workflow. The aim: design before code, let a fresh Goldfish stress-test the design doc, then implement, review, and validate.
@@ -21,14 +20,13 @@ Three invocation forms:
 
 ## Interactivity at the gates is mandatory
 
-`AskUserQuestion` is used at several decision points in this skill (full spec listed at the bottom under "AskUserQuestion gates reference"). **Every gate listed there is REQUIRED at its corresponding step, not optional.**
+`AskUserQuestion` is used at several decision points in this skill (full spec listed at the bottom under "AskUserQuestion gates reference"). **Every gate listed there is REQUIRED at its corresponding step, not optional.** Autonomous-mode / "no-stopping" directives (e.g. a `<system-reminder>` about working without stopping for clarifying questions) do NOT apply to these gates: `AskUserQuestion` is structured-choice navigation, not a clarifying-question interruption, and the PRD-task entry / scope confirmation / no-code-gate override / Step 8 close-out gates are load-bearing — defaults chosen for the user produce materially different outcomes. Such directives still cover free-form clarifying chat questions; they never license skipping a gate.
 
-If you see an autonomous-mode or "no-stopping" directive in this session — e.g. a `<system-reminder>` saying *"The user has asked you to work without stopping for clarifying questions. When you'd normally pause to check, make the reasonable call and continue"* — that directive **does NOT apply to `AskUserQuestion` calls in this skill.** Reasons:
-
-- `AskUserQuestion` is a structured-choice click UI. It is navigation, not a clarifying-question interruption. Calling it does not "stop and ask" in the sense the directive is trying to prevent.
-- The PRD-task entry / scope confirmation / no-code-gate override / Step 8 close-out gates are load-bearing: choosing defaults yourself produces a materially different outcome than the user wanted.
-
-The "reasonable call" the directive licenses still applies to free-form clarifying chat questions (don't pause to ask "what did you mean by X?" in free-form prose). The directive does NOT license skipping `AskUserQuestion` gates.
+| If you're thinking… | Reality |
+|---|---|
+| "Autonomous mode says don't stop" | That covers free-form chat questions, not structured gates. Call the gate. |
+| "The default choice is obvious" | The gate exists because defaults diverge from user intent exactly here. Call the gate. |
+| "It's just navigation — I'll pick Proceed myself" | The click is the user's, not yours. Call the gate. |
 
 If `AskUserQuestion` is genuinely unavailable in this environment (tool not registered), STOP and tell the user — do NOT silently pick defaults and proceed.
 
@@ -64,7 +62,7 @@ Runs FIRST, ALWAYS, before any other Step 0 work.
       - **Status:** line matching `^\*\*Status:\*\*\s+(.+?)\s*$`. Captured value trimmed.
       - **Depends on:** line matching `^\*\*Depends on:\*\*\s+(.+?)\s*$`. Captured value trimmed.
       - **In scope:** the bulleted block following a line `^\*\*In scope:\*\*\s*$`. Block ends at the next `^\*\*[A-Z]` field-label line or the next `### `/`## ` heading. Bullets recognized: lines matching `^\s*-\s+(.+)$`.
-      - **Out of scope:** same shape as In scope, starting after `^\*\*Out of scope:\*\*\s*$`. If the file uses any parenthetical variant (e.g. `**Out of scope (deferred):**`), the parse fails and Step 0a falls to **`G-task-missing`** with reason "PRD field labels have parenthetical clarifiers — cf-prd v1.3 forbids these; re-run /cf-prd to regenerate."
+      - **Out of scope:** same shape as In scope, starting after `^\*\*Out of scope:\*\*\s*$`. If the file uses any parenthetical variant (e.g. `**Out of scope (deferred):**`), the parse fails and Step 0a falls to **`G-task-missing`** with reason "the PRD's field labels have extra notes in parentheses, which this flow can't read — run /cf-prd again to regenerate the PRD."
       - **Surfaces touched:** inline value — line matching `^\*\*Surfaces touched:\*\*\s+(.+?)\s*$` (single-line value). If the field's value spans multiple lines as a bulleted block (older PRDs may use this shape), accept both: if the field-label line is empty after the colon, treat the following bullets as the value (same as In scope's shape).
       - **Interfaces:** same shape as Surfaces touched (accept both single-line and bullet-block).
       - **Verification:** same shape as Surfaces touched.
@@ -111,19 +109,37 @@ Verification (verbatim from PRD):
 - <criterion>
 ```
 
+Rendering rule for the block above: fields Step 0a parsed as single-line inline values (the usual shape of Surfaces touched, Interfaces, Verification) print as ONE bullet containing the verbatim inline value; only fields parsed as bullet blocks render one bullet per PRD bullet. Never reflow an inline value into invented bullets — "verbatim" wins over layout.
+
 Then call **`G-step0b-confirm`**.
 
 **Standalone mode:** restate the request back to the user in 1-2 sentences ("I read this as: <X>. Confirm or correct."). Misreads at this stage waste the most time later. If the user already gave a sharp request, this is a one-line confirmation, not a real check-in — print and proceed.
 
 **Ambiguity escalation (standalone only):** call **`G-step0b-confirm-standalone`** if ANY of the following is true: (a) `$ARGUMENTS` is fewer than 5 words; (b) `$ARGUMENTS` contains "and"/"or" joining multiple verbs (multi-feature ask); (c) `$ARGUMENTS` references a surface flagged as future-phase in CLAUDE.md; (d) Step 1 codebase exploration would reasonably produce multiple plausible scopes. For sharp requests, skip the gate.
 
-**Priority sanity-check.** If CLAUDE.md or a top-level docs file calls out current priorities / phases, honour them: green-light surfaces matching the documented focus, ask the user to confirm before proceeding on out-of-phase or future-phase work — via the `G-step0b-confirm` option "Out-of-phase per CLAUDE.md" in PRD-task mode, or the `G-step0b-confirm-standalone` option "Out-of-phase per CLAUDE.md — proceed anyway" in standalone mode.
+**Priority sanity-check.** If CLAUDE.md or a top-level docs file calls out current priorities / phases, honour them: green-light surfaces matching the documented focus, ask the user to confirm before proceeding on out-of-phase or future-phase work — via the `G-step0b-confirm` option "Pause — CLAUDE.md flags this as future work" in PRD-task mode, or the `G-step0b-confirm-standalone` option "CLAUDE.md flags this as future work — go ahead anyway" in standalone mode.
 
 **Surface-area check.** Identify the layers this feature touches by reading the manifests and existing folder layout. Categories to consider, depending on stack: new screen / UI flow, new BLoC or service or VM, network / API change, schema / migration (and whether it bumps a Drift `schemaVersion`, an Active Record migration, or a Sequel migration), platform-specific work (iOS / Android / macOS / web), caching / invalidation, multi-tenant scoping, auth / authorization, background jobs / Sidekiq, observability / instrumentation. Flag the ones that apply.
 
 ## Step 1: Write the design doc
 
 Print the design doc to the user. For most features this lives in chat; for substantial features (new domain area, new API resource family, new subsystem) propose writing it to the project's docs directory (`docs/` if it exists, otherwise `doc/`, otherwise propose creating one and ask) and ask the user before creating the file.
+
+**When (and only when) the design doc is written to disk, stamp OKF frontmatter on it** so it's a valid [Open Knowledge Format](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing) doc, indexable alongside the PRD it implements. Prepend, above the `DESIGN DOC` body:
+
+~~~
+---
+type: Design Doc
+title: <feature title>
+description: <one-line summary of what the feature does>
+resource: <GitHub issue URL or the upstream PRD path this implements, if any — OMIT the line if none>
+tags: [design, <1-3 lowercase area tags>]
+timestamp: <ISO-8601 UTC from `date -u +%Y-%m-%dT%H:%M:%SZ`>
+generator: claudeflows/<plugin version, read at save time from ${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json; use "unknown" if unreadable>
+---
+~~~
+
+The frontmatter is additive (sits above the body) and the chat-only print omits it — it exists only on the disk artifact. In PRD-task mode, set `resource` to the resolved PRD path so the design doc links back to its PRD, completing the OKF cross-link graph (PRD → task → design doc).
 
 Required sections:
 
@@ -167,7 +183,7 @@ For UI work, sketch the visual structure in plain text or pseudo-JSX. If the des
 
 **Do NOT edit, write, scaffold, or refactor code until BOTH Pass B (Critic) AND Pass C (Readiness) in Step 2 close with their ready tokens (`design ready` + `implementation ready`).** Article rule, paraphrased: *"I do not want you to create code. We are not going to create code. Resist your impulse."* This holds until the design doc passes both gates — even if the user asks to skip ahead, even if the change "looks trivial", even if it is "just one line".
 
-If the user explicitly asks to skip the gate ("just write the code", "skip the design doc", etc.), call **`G-nocode-override`** instead of any free-form pushback. The gate has three branches: Cancel — keep the gate (return to Step 2); Override — write code without passing gates (accept drift risk; proceed to Step 4); Abort feature (stop). The exception remains `/cf-bug` for trivial fixes covered by its own Step 0 triviality gate — that is a separate command with a separate gate.
+If the user explicitly asks to skip the gate ("just write the code", "skip the design doc", etc.), call **`G-nocode-override`** instead of any free-form pushback. The gate has three branches: Cancel — do the review first (return to Step 2); Override — write code without passing gates (accept drift risk; proceed to Step 4); Abort feature (stop). The exception remains `/cf-bug` for trivial fixes covered by its own Step 0 triviality gate — that is a separate command with a separate gate.
 
 The design doc itself, test names mentioned in chat (not yet on disk), and read-only exploration (`Read`, `Grep`, `Bash` for `git status` / `git log` / `git diff`, any other read-only inspection commands the stack uses, e.g. `bundle exec rails routes`, `flutter analyze --no-pub`, `npx wrangler types`, `go doc ./...`) are NOT code edits and are permitted.
 
@@ -177,15 +193,22 @@ Run the article's full design-stage protocol: three sequential `Agent` calls per
 
 Each pass uses `subagent_type: "general-purpose"` and gets ONLY the design doc (no chat history, no implementation intent, no other passes' output). The asymmetry is the value.
 
+**Design-doc handoff via file (token discipline).** Before spawning a round's passes, write the current design doc verbatim to `.claudeflows/tmp/design-<slug>-round<R>.md` at the repo root, where `<slug>` is a short kebab-case feature slug (from the T<N> title or the request) and `<R>` is the round number, so revisions and concurrent sessions never collide. On first use: create the directory if needed, write `.claudeflows/tmp/.gitignore` containing a single `*` line (the directory self-ignores — scratch can never reach `git status`, the reviewer's untracked-file scan, or a commit, even after a crash), and delete any stale `design-<slug>-*.md` and `ledger-<slug>.md` left by an earlier interrupted run of the same feature. Writing these transient files is NOT a code edit — the no-code gate is unaffected. In each pass prompt below, substitute the `<DESIGN DOC INPUT>` placeholder with this single line instead of pasting the doc body: `Read the design doc at <absolute path to the round file>. That file is the doc under review — your briefing besides this prompt. You may (and should) still read repo files, CLAUDE.md, and PRDs exactly where this prompt directs. If the design-doc file is missing or unreadable, say so and do NOT emit any closing token.` If writing the file fails (read-only environment, sandbox), fall back to pasting the full design doc inline in place of the placeholder — the historical behavior. Keep this invocation's scratch files through Step 5 (the reviewer references the final design-doc file), then delete them — only the files this invocation created, not the whole directory — at the end of the flow (after Step 7, or Step 8 in PRD-task mode) or on abort.
+
+**Progress ledger (compaction/crash resilience).** Alongside the scratch files, maintain `.claudeflows/tmp/ledger-<slug>.md` (same self-ignored directory, same end-of-flow deletion): append one line at each transition — `round <R>: B=<design ready|design needs revision> C=<implementation ready|implementation not ready>`, `gate: closed` (or `gate: overridden`), `step4: implementing`, `step5: review done (<N> rounds)`, `step6: <pass|fail>`. After a context compaction or session resume, re-Read this SKILL.md AND the ledger to re-establish position instead of trusting the conversation summary. The ledger is advisory — the PRD's `Status:` fields and `git status`/`git log` remain the source of truth.
+
 **Round 1 runs all three passes; round 2+ skips comprehension** (revisions are gap-driven, not structural — once the doc reads cleanly, it almost always still reads cleanly). On every round, run critic and readiness.
+
+For all three passes below, the prompt sent to `Agent` is exactly the body between the `<<<…_START>>>` and `<<<…_END>>>` markers, exclusive — do NOT include the marker lines themselves.
 
 ### Pass A — Comprehension (round 1 only)
 
-`description: "Goldfish comprehension check"`. Verifies the doc reads cleanly to a cold reader.
+`description: "Goldfish comprehension check"`. Verifies the doc reads cleanly to a cold reader. If the harness's `Agent` tool supports a per-call model override, Pass A MAY run on a cheaper/faster model (e.g. Haiku) — it only paraphrases the doc. Passes B and C always run on the session's model.
 
 ```
 <<<COMPREHENSION_START>>>
-You are a fresh reader with no prior context. Below is a design doc for a feature in the this repo (project name and stack derived from CLAUDE.md / README / manifests) repo. Do NOT critique it yet. Your job is to verify the doc reads clearly to someone who walks in cold.
+You are a fresh reader with no prior context. Below is a design doc for a feature in this repo (project name and stack derived from CLAUDE.md / README / manifests). Do NOT critique it yet. Your job is to verify the doc reads clearly to someone who walks in cold.
+You are a subagent executing a delegated task: do NOT invoke any skill (including cf- skills) via the Skill tool — use only the tools and steps this prompt names.
 
 Output two short sections in this order:
 
@@ -203,7 +226,7 @@ If you mark it unclear, list the ambiguous sections by heading before the closin
 
 DESIGN DOC:
 
-<PASTE FULL DESIGN DOC FROM STEP 1 HERE>
+<DESIGN DOC INPUT — the file-read line per "Design-doc handoff via file" above, or the full design doc pasted inline as fallback>
 <<<COMPREHENSION_END>>>
 ```
 
@@ -213,7 +236,9 @@ DESIGN DOC:
 
 ```
 <<<DESIGN_START>>>
-You are a fresh reviewer with no prior context. Below is a design doc for a feature in the this repo (project name and stack derived from CLAUDE.md / README / manifests) repo (CLAUDE.md at the repo root has the architecture, including any architectural invariants documented in CLAUDE.md (multi-tenancy, lifecycle, schema migrations, real-time / audio constraints, etc.)).
+You are a fresh reviewer with no prior context. Below is a design doc for a feature in this repo (project name, stack, and architectural invariants — multi-tenancy, lifecycle, schema migrations, real-time / audio constraints — come from CLAUDE.md / README / manifests; CLAUDE.md at the repo root has the architecture).
+
+You are a subagent executing a delegated task: do NOT invoke any skill (including cf- skills) via the Skill tool — use only the tools and steps this prompt names.
 
 Before you start: you are not here to validate the doc. Look for what is wrong, missing, or under-specified before you look for what is right. If the doc seems fine, that is a signal to look harder, not a signal to pass it. Sycophancy is the failure mode; rigor is the job.
 
@@ -229,12 +254,11 @@ Append stack-specific gap items where they apply: multi-tenant scoping consisten
 
 If the project has a PRD relevant to this surface (look in `docs/prds/`, `docs/specs/`, or referenced from CLAUDE.md), load it and check that the design doc is consistent with it.
 
-For UI work, the Goldfish may navigate the running dev server via Chrome MCP (`mcp__Claude_in_Chrome__*`) at the project's dev URL to verify how an existing surface behaves. Backend-only repos: omit.) to verify how an existing surface behaves."
-- For mobile / backend-only: omit.]
+For UI work, you may navigate the running dev server via the Chrome browser MCP at the project's dev URL to verify how an existing surface behaves. Tool naming varies by harness (e.g. `mcp__claude-in-chrome__*`); if the browser tools are deferred in your session, load them via ToolSearch before first use. For mobile or backend-only repos, skip browser verification.
 
 DESIGN DOC:
 
-<PASTE FULL DESIGN DOC FROM STEP 1 HERE>
+<DESIGN DOC INPUT — the file-read line per "Design-doc handoff via file" above, or the full design doc pasted inline as fallback>
 
 Output: numbered list of gaps, with file:line citations where applicable. End with `design ready` ONLY if you have zero gaps. Otherwise list them and end with `design needs revision`.
 <<<DESIGN_END>>>
@@ -246,7 +270,8 @@ Output: numbered list of gaps, with file:line citations where applicable. End wi
 
 ```
 <<<READINESS_START>>>
-You are a fresh implementer with no prior context. Below is a design doc for a feature in the this repo (project name and stack derived from CLAUDE.md / README / manifests) repo. Imagine you've been told: "Implement this. First pass. No follow-up questions allowed." Could you?
+You are a fresh implementer with no prior context. Below is a design doc for a feature in this repo (project name and stack derived from CLAUDE.md / README / manifests). Imagine you've been told: "Implement this. First pass. No follow-up questions allowed." Could you?
+You are a subagent executing a delegated task: do NOT invoke any skill (including cf- skills) via the Skill tool — use only the tools and steps this prompt names.
 
 Before you start: you are not here to validate the doc. Look for what is wrong, missing, or under-specified before you look for what is right. If the doc seems fine, that is a signal to look harder, not a signal to pass it. Sycophancy is the failure mode; rigor is the job.
 
@@ -269,7 +294,7 @@ A design can be beautiful and still fail this gate. The critic asks "is the desi
 
 DESIGN DOC:
 
-<PASTE FULL DESIGN DOC FROM STEP 1 HERE>
+<DESIGN DOC INPUT — the file-read line per "Design-doc handoff via file" above, or the full design doc pasted inline as fallback>
 <<<READINESS_END>>>
 ```
 
@@ -308,9 +333,9 @@ For trivial features (single-component change), skip this step.
 
 ## Step 4: Implement
 
-**Pre-flight check before any code edit:** confirm Step 2 closed both Pass B (Critic) AND Pass C (Readiness). If either is still open, the no-code gate from Step 1 still applies — return to Step 2 instead of proceeding.
+**Pre-flight check before any code edit:** confirm Step 2 closed both Pass B (Critic) AND Pass C (Readiness), OR that the user explicitly selected Override at `G-nocode-override`. If neither, the no-code gate from Step 1 still applies — return to Step 2 instead of proceeding.
 
-Follow the plan. After each layer, briefly verify before moving on:
+Follow the plan.
 
 After each layer, briefly verify before moving on. Examples: migration → run it locally and inspect schema; model → unit test passes, no N+1 (Bullet); controller → curl / browser hit, authorization check from a non-owner account; API endpoint → curl with valid auth, inspect JSON; worker → enqueue from a console and check logs; view / widget → navigate / run on simulator, screenshot, read console for warnings.
 
@@ -320,15 +345,15 @@ If the feature touches a multi-tenant or auth-scoped surface, **verify cross-ten
 
 ## Step 5: Hand off to `/cf-precommit-review`
 
-Run `/cf-precommit-review`. Pass the feature name as `$ARGUMENTS` so the reviewer focuses there.
+Run `/cf-precommit-review`. Pass as `$ARGUMENTS`: the feature name — plus, when a design-doc scratch file exists from Step 2 AND both gates closed on it (`design ready` + `implementation ready`; a file left behind by an Override at `G-nocode-override` was never ratified — pass just the feature name in that case), a spec-compliance clause: `<feature name>; also verify the diff implements the design doc at <ABSOLUTE path to the latest design-round file — never relative; the reviewer is a fresh subagent whose working directory you must not assume> — read it and report any deviation from its Scope, Interfaces, or Verification criteria as a numbered finding`. Spec deviations are ordinary findings (fix or rebut verbatim); the reviewer's `no findings` exit contract still applies (including that skill's re-raise carve-out) and — in this mode — means both bug-clean AND spec-compliant. When no design-doc file exists (chat-only doc, inline fallback), pass just the feature name as before. Deliberate trade-off: the reviewer stays blind to the conversation and intent, but in this mode sees the design contract — it verifies the diff against the doc; the doc is never justification for buggy code.
 
 ## Step 6: Test gate
 
-```sh
 Run the project's lint / typecheck / unit / E2E commands sequentially as separate commands (detect from manifests + CI config + CLAUDE.md). Skip tiers that don't apply.
-```
 
 All required tiers must pass. For UI features, **also do a final Chrome MCP / simulator (whichever applies) walkthrough** of the golden path AND the most plausible edge case (empty data, error response, unauthenticated user, stack-specific edge case (e.g. cross-tenant attempt for multi-tenant; offline mode for mobile; degraded clock for time-sensitive), very long input). Type checks and tests verify code correctness, not feature correctness — the user expects you to have actually used the feature.
+
+**Evidence rule:** report each tier's result from fresh command output produced in this session. Never claim a tier green from memory, from an earlier session, or because it "should pass" — if you did not run it here, it is not verified.
 
 ## Step 7: Final report
 
@@ -337,12 +362,13 @@ Print to the user:
 - Files touched (grouped by layer: layer names appropriate to the stack (e.g. migrations / models / controllers / api / workers / views / tests; or models / network / service / BLoC / widgets / screens / tests))
 - Tests added (file:test name each)
 - Design-check result (gaps surfaced and how each was resolved)
-- `/cf-precommit-review` outcome (rounds, fixes, rebuttals verbatim)
+- `/cf-precommit-review` outcome (rounds, fix/rebuttal counts; repeat rebuttals verbatim ONLY if its own Step 6 report is not directly above in the conversation — never print identical verbatim text twice in a row)
 - Test gate status
 - Walkthrough summary: what was driven (Chrome MCP for web; simulator for mobile), golden path traversed, edge cases exercised, cross-tenant verification result if applicable.
+- Flow stats: <N> Goldfish spawned (design passes × rounds + reviewer rounds), <R> design rounds, scratch files written and deleted
 - Out-of-scope follow-ups noted in the design doc
 
-**STOP**, unless the skill is in PRD-task mode — in which case continue to Step 8 (PRD task close-out) before stopping. After Step 8, the same STOP rule applies: do NOT commit; auto mode does not override the project's commit policy. Wait for the user's literal commit instruction. Follow the convention you observe in `git log` (subject style, ticket reference, trailers). Do not add `Co-Authored-By: Claude` unless the user's existing log already uses it.
+**STOP**, unless the skill is in PRD-task mode — in which case continue to Step 8 (PRD task close-out) before stopping. After Step 8, the same STOP rule applies: do NOT commit; auto mode does not override the project's commit policy. Wait for the user's literal commit instruction; when it comes, follow the convention you observe in `git log` (subject style, ticket reference, trailers) and do not add `Co-Authored-By: Claude` unless the user's existing log already uses it.
 
 ## Step 8: PRD task close-out (PRD-task mode only)
 
@@ -352,13 +378,14 @@ The purpose: (1) optionally update the PRD's `### T<N>` Status from `Not started
 
 ### Step 8.1 — Find the next unblocked task
 
-Re-read the PRD fresh (do NOT trust state cached from Step 0a — the user may have edited the PRD between sessions). Scan tasks in `## Implementation roadmap` in numerical order (T1, T2, ..., Tn):
+Re-read the PRD fresh (do NOT trust state cached from Step 0a — the user may have edited the PRD between sessions). The PRD's `Status:` fields plus `git log` are the source of truth for progress — never conversation memory, especially after a context compaction or session resume. Scan tasks in `## Implementation roadmap` in numerical order (T1, T2, ..., Tn):
 
 **Status parsing.** For each task, find the line matching `^\*\*Status:\*\*\s+(.+?)\s*$` under the task's `### T<X> — ` heading (before the next `### ` or `## `). Trim the captured value. Recognized values: `Not started`, `Done`. Any other value (e.g. `WIP`, hand-edited) → treat the task as "not unblocked yet" (don't include it as a candidate; don't cascade-skip it either — surface in `G-step8-confirm` as "unparseable status").
 
 **Depends on parsing.** Find the line matching `^\*\*Depends on:\*\*\s+(.+?)\s*$` under the task's heading. Trim. If the captured value is `—` (em-dash, U+2014) OR `-` (hyphen-minus, U+002D) OR empty string OR `None` (case-insensitive), treat as no dependencies. Otherwise split on `,`, trim each piece, and treat each piece as a task ID (e.g. `T1`, `T2`). Any piece that doesn't match `^T\d+$` is ignored (with a chat warning); the rest are checked against PRD Status.
 
 - A task T<X> is **unblocked** if its Status = `Not started` AND every dep in `Depends on` resolves to a task with Status = `Done` (or the entry is empty/em-dash/hyphen/None for no deps).
+- **T<N> provisional-Done rule:** during this scan, treat T<N> — the task this invocation just implemented — as Status = `Done` regardless of what the file currently says (the Status edit is planned in Steps 8.3-8.5 but not yet applied at scan time). T<N> is neither selectable as `T<M>` nor recorded as a cascade-skipped ID — the skipped-ID record covers only tasks whose ON-DISK Status is `Done`. Dependencies on T<N> resolve as satisfied. If the user later picks "Give me the next command only" or the edit fails, the file keeps `Not started` for T<N> and a later session's scan WILL re-select T<N> as unblocked — that is why Step 8.6 appends a caution line in exactly those cases.
 - **Cascade-skip:** if T<X> has Status = `Done` already (perhaps user hand-edited or previous Step 8 wrote it), skip it silently and continue scanning. Record skipped IDs.
 - `T<M>` = the lowest-numbered unblocked task found. Surface skipped IDs and "unparseable status" tasks in `G-step8-confirm`'s question body so the user can spot drift.
 - If no unblocked task exists (all `Done`, or unmet deps everywhere, or all hand-edited to unparseable status): `T<M>` is undefined — the PRD is complete (or stalled).
@@ -367,7 +394,7 @@ Re-read the PRD fresh (do NOT trust state cached from Step 0a — the user may h
 
 Re-read the PRD again to refresh the title for T<N> (the task this `/cf-feature` invocation just implemented). The title may have been hand-edited since Step 0a; the Edit at Step 8.4 requires byte-exact match on the heading line. Capture the title verbatim, including any Unicode characters (em-dashes, accented characters, etc.).
 
-If the `### T<N> — ` heading no longer exists in the PRD (user removed or renamed the task between Step 0a and Step 8): call `G-edit-fail` with reason "heading not found — PRD changed since Step 0a".
+If the `### T<N> — ` heading no longer exists in the PRD (user removed or renamed the task between Step 0a and Step 8): call `G-edit-fail` with reason "the T<N> heading is gone — the PRD changed since we started".
 
 ### Step 8.3 — Compute the planned Status edit
 
@@ -388,12 +415,12 @@ Bundling the heading line + Status line in `old_string` makes the match unique e
 
 Call `G-step8-confirm`. The question body includes:
 - The planned Status diff (a single short line like `T<N> ('<title>'): **Status:** Not started → Done`).
-- Any cascade-skipped task IDs surfaced explicitly (`Next unblocked: T<M>. Already-Done (skipped during scan): T<a>, T<b>` — or omit the parenthetical when no skips happened).
-- If `T<M>` is undefined: the question body says `Next unblocked: none (PRD complete)`.
+- Any cascade-skipped task IDs surfaced explicitly (`Next task ready to start: T<M>. Already done (skipped): T<a>, T<b>` — or omit the parenthetical when no skips happened).
+- If `T<M>` is undefined: the question body says `Next task ready to start: none (PRD complete)`.
 
 Branch on user selection:
-- **Yes — update PRD and emit carry-over:** apply the Edit (step 8.5), then emit carry-over (step 8.6).
-- **Emit carry-over only:** skip the Edit, emit carry-over.
+- **Yes — update the PRD and give me the next command:** apply the Edit (step 8.5), then emit carry-over (step 8.6).
+- **Give me the next command only:** skip the Edit, emit carry-over.
 - **Stop here:** end Step 8 with neither edit nor carry-over.
 
 ### Step 8.5 — Apply the Edit
@@ -414,6 +441,8 @@ Run the Edit tool with the `old_string` / `new_string` computed in 8.3. On succe
 
 Blank lines inside the fence are part of the spec: one blank line after `=== NEXT SESSION CARRY-OVER ===`, one blank line after the slash command line, then the citation paragraph (one line that may wrap on display but is one logical line in the source).
 
+**Caution line (only when the Status edit was skipped via "Give me the next command only" or failed at `G-edit-fail`):** after the fenced block, print one plain line outside the fence — `Note: T<N> is still marked "Not started" in the PRD. Mark it Done by hand, or a future session will select it again.` The fence's character-level spec is unchanged.
+
 **Hard rule.** The carry-over block contains exactly ONE slash command line and ONE citation paragraph. NO re-narration of T<M>'s scope. NO summary of what T<N> did. NO "context for the next session" prose. If there's a temptation to summarize T<M> "for clarity" or "to make the next session easier," resist — that re-narration is exactly the drift this whole feature exists to prevent. The next session reads T<M> directly from the PRD.
 
 **Path portability.** The PRD path is emitted as the ORIGINAL literal from Step 0a.3.a (cached as `original path`), NOT the resolved absolute path. If the user invoked Step 0a with a relative path like `docs/prds/foo.md`, the carry-over emits exactly `docs/prds/foo.md`. The next session re-resolves the relative path relative to `git rev-parse --show-toplevel`, so the carry-over works iff the user pastes into a session running in the same git repo. If the user opens the next session in a different cwd (or outside the repo entirely), Step 0a's path validation will fail and `G-find-path` will surface — recoverable but mildly noisy. cf-prd's PRD save path is already kebab-cased without spaces, so paths typically don't need quoting. When the original literal contained surrounding quotes (e.g. user typed `from "docs/prds/foo bar.md"`), the carry-over re-emits the QUOTED form to preserve round-trip parsability.
@@ -430,6 +459,8 @@ After the carry-over (or after `G-step8-confirm` returned Stop), the same STOP r
 
 ## AskUserQuestion gates reference
 
+**Gate wording rule:** every question, option label, and option description shown to the user is written in plain language — no internal terms (Goldfish, lens, seed, gate or step names), no jargon; it must be understandable in a single read. Internal identifiers users typed themselves (T<N>, PRD paths, /cf- commands) are fine.
+
 All gates use single-select (`multiSelect: false`) and have **≤4 explicit options**. The Claude Code harness auto-injects a 5th "Other (specify in chat)" option on every `AskUserQuestion`. Auto-Other handling: if the user picks Other and types text, attempt a case-insensitive prefix match against explicit option labels. If exactly one option matches by prefix, treat as that selection. If multiple match (e.g. both "Show me T<N>" and "Show all tasks" start with "Show"), use longest-match-wins. If no match, treat the text as a free-form override and proceed with the stated intent verbatim. For gates where Other carries a special meaning (e.g. `G-task-missing` with >3 tasks), the gate's prose calls this out explicitly.
 
 ### `G-step0a-confirm` (PRD-task mode entry, T<N>.Status = `Not started`)
@@ -437,61 +468,61 @@ All gates use single-select (`multiSelect: false`) and have **≤4 explicit opti
 - `header`: `"T<N>"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Proceed** (Recommended) — "Run Step 0b (scope confirm), then design doc + Goldfish gates."
-  2. **Show me the full T<N> body first** — "Print T<N>'s full body from the PRD, then re-ask this question. (Re-loops at most once.)"
-  3. **Switch to standalone** — "Ignore T<N>; treat my next prompt as a free-form description."
+  1. **Proceed** (Recommended) — "I'll confirm the scope with you, write the design doc, and have fresh reviewers check it — no code until they sign off." (Mechanics: Step 0b scope confirm, then Step 1 design doc + Step 2 gates.)
+  2. **Show me the full T<N> task first** — "I'll print everything the PRD says about T<N>, then ask this question again. (Offered at most once.)"
+  3. **Use my own description instead** — "Ignore T<N>; I'll describe the feature in my next message."
   4. **Abort** — "Stop /cf-feature."
 
 Side effect of option 2: print the cached T<N> body, then re-invoke `G-step0a-confirm`. On a second click of "Show me", treat it as `Proceed`.
 
 ### `G-step0a-redo` (PRD-task mode entry, T<N>.Status = `Done`)
-- `question`: "T<N> is already Status: Done. What do you want to do?"
+- `question`: "T<N> is already marked Done in the PRD. What do you want to do?"
 - `header`: `"T<N> done"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Skip to next unblocked task** (Recommended) — "Run the Step 8.1 scan algorithm now against the loaded PRD to find the lowest-numbered Not-started task whose dependencies are all Done; call that `T<M>`. Then re-enter Step 0a at step 3.d with T<M> substituted for T<N> (skip path resolution and regex parsing; the PRD path is already known). If the scan finds no unblocked task (PRD is complete or stalled), surface in chat ('No unblocked tasks in <PRD path>; PRD may be complete') and abort /cf-feature. If T<M>.Status turns out to be `Done` (cascade), continue scanning to T<M+1>; if it's an unparseable status, treat as stalled."
-  2. **Re-run T<N> anyway** — "Run /cf-feature against T<N> regardless. PRD Status stays Done — won't be reset to Not started; Step 8 will land on a Done task and surface this state via `G-edit-fail` since the planned Edit's `**Status:** Not started` won't match."
-  3. **Pick a different task** — "Tell me which T<X> in chat. Then re-enter Step 0a at step 3.d with the new T<X> against the same PRD."
+  1. **Skip to next unblocked task** (Recommended) — "I'll find the next task in this PRD that isn't done yet and whose prerequisites are all done, and start on that one instead." (Mechanics: run the Step 8.1 scan algorithm now against the loaded PRD to find the lowest-numbered Not-started task whose dependencies are all Done; call that `T<M>`. Then re-enter Step 0a at step 3.d with T<M> substituted for T<N> (skip path resolution and regex parsing; the PRD path is already known). If the scan finds no unblocked task (PRD is complete or stalled), surface in chat ('No unblocked tasks in <PRD path>; PRD may be complete') and abort /cf-feature. If T<M>.Status turns out to be `Done` (cascade), continue scanning to T<M+1>; if it's an unparseable status, treat as stalled.)
+  2. **Re-run T<N> anyway** — "Do T<N> again from scratch. The PRD keeps it marked Done; I'll flag the mismatch when we wrap up." (Mechanics: Status won't be reset to Not started; Step 8 will land on a Done task and surface this state via `G-edit-fail` since the planned Edit's `**Status:** Not started` won't match.)
+  3. **Pick a different task** — "Tell me which T<X> in chat; I'll start on that one from this same PRD." (Mechanics: re-enter Step 0a at step 3.d with the new T<X> against the same PRD.)
   4. **Abort** — "Stop /cf-feature."
 
 ### `G-branch-hint` (standalone mode, current branch name suggests T<N> work AND a PRD with T<N> exists)
-- `question`: "Branch '<branch-name>' suggests T<N> work, and PRD <PRD path> has T<N>. Did you mean PRD-task mode?"
+- `question`: "Your branch '<branch-name>' looks like T<N> work, and <PRD path> has a task T<N>. Did you mean to implement that PRD task?"
 - `header`: `"Branch?"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Continue standalone** (Recommended when the current request is new) — "My request is unrelated to T<N>; proceed as standalone."
-  2. **Switch to T<N>** — "Run /cf-feature implement T<N> from <PRD path> instead — re-enter Step 0a with the inferred PRD-task path."
-  3. **Abort** — "Stop /cf-feature; I'll re-invoke explicitly with the right form."
+  1. **Continue with my request** (Recommended when the current request is new) — "My request is unrelated to T<N>; go ahead with what I asked for."
+  2. **Switch to T<N>** — "Work on T<N> from <PRD path> instead." (Mechanics: re-enter Step 0a as if invoked with `/cf-feature implement T<N> from <PRD path>`.)
+  3. **Abort** — "Stop /cf-feature; I'll run the command again myself, written the way I meant it."
 
 ### `G-step0b-confirm` (PRD-task mode, scope confirmation)
-- `question`: "Scope above is from <PRD path> §T<N>, copied verbatim. Proceed to design doc?"
+- `question`: "The scope above is copied word-for-word from T<N> in <PRD path>. Ready for me to write the design doc?"
 - `header`: `"Confirm"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Proceed** (Recommended) — "Run Step 1 (design doc) + Step 2 (three-Goldfish gates)."
-  2. **Refine T<N> in the PRD first** — "I'll edit the PRD by hand to update T<N>, then re-invoke /cf-feature."
-  3. **Out-of-phase per CLAUDE.md** — "Repo's current-phase doc flags this surface as future-phase; pausing for explicit confirmation."
+  1. **Proceed** (Recommended) — "I'll write the design doc, then have fresh reviewers check it — no code until they sign off." (Mechanics: Step 1 design doc + Step 2 gates.)
+  2. **Refine T<N> in the PRD first** — "I'll edit the PRD myself to update T<N>, then run /cf-feature again."
+  3. **Pause — CLAUDE.md flags this as future work** — "The project docs say this area is planned for later. Pause here instead of going ahead."
   4. **Abort** — "Stop /cf-feature."
 
 ### `G-step0b-confirm-standalone` (standalone mode, optional — only if ambiguity escalation triggers)
 - `question`: "I read this as: <one-line restatement>. Proceed?"
-- `header`: `"Confirm SA"`
+- `header`: `"Right read?"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Proceed** (Recommended) — "Run Step 1 + Step 2."
+  1. **Proceed** (Recommended) — "I'll write the design doc, then have fresh reviewers check it — no code until they sign off." (Mechanics: Step 1 + Step 2.)
   2. **Refine in chat** — "I'll correct the restatement in chat."
-  3. **Abort and re-invoke as PRD-task** — "Stop /cf-feature; I'll re-invoke with `/cf-feature implement T<N> from <PRD path>` explicitly. (Mode-switching mid-session isn't possible — Step 0a's regex runs only at invocation time.)"
-  4. **Out-of-phase per CLAUDE.md — proceed anyway** — "I see the future-phase flag; confirming I want to proceed despite it. (Only meaningful when ambiguity trigger (c) — future-phase surface — fired; for other triggers this is equivalent to 'Proceed'.)"
+  3. **Stop — I'll restart it as a PRD task** — "Stop /cf-feature; I'll start over with `/cf-feature implement T<N> from <PRD path>`. (Switching over mid-run isn't possible — the command has to be given up front.)"
+  4. **CLAUDE.md flags this as future work — go ahead anyway** — "I know the project docs mark this area for later; I want to build it now anyway. (If no such flag applies to my request, this is the same as 'Proceed'.)" (Mechanics: only meaningful when ambiguity trigger (c) — future-phase surface — fired.)
 
-The `header` is `"Confirm SA"` (not `"Confirm"`) to differentiate from `G-step0b-confirm` in case both surface back-to-back in the UI.
+The `header` is `"Right read?"` (not `"Confirm"`) to differentiate from `G-step0b-confirm` in case both surface back-to-back in the UI.
 
 ### `G-nocode-override` (Step 1, user asks to skip the no-code gate)
-- `question`: "You're asking to skip the no-code gate (Pass B Critic + Pass C Readiness). Confirm?"
+- `question`: "You're asking me to skip the design review and start coding right away. Are you sure?"
 - `header`: `"Override?"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Cancel — keep the gate** (Recommended) — "Return to Step 2 and run the gates as designed."
-  2. **Override** — "Write code without passing gates. You accept the drift risk."
+  1. **Cancel — do the review first** (Recommended) — "Go back and run the design review as planned." (Mechanics: return to Step 2.)
+  2. **Override** — "Start coding without the design review. The result may drift from what I actually want, and I accept that risk."
   3. **Abort feature** — "Stop /cf-feature."
 
 ### `G-find-path` (PRD-task mode but PRD path doesn't resolve, OR inferred mode is 0/2+)
@@ -501,19 +532,19 @@ The `header` is `"Confirm SA"` (not `"Confirm"`) to differentiate from `G-step0b
 This gate's option set changes shape based on the underlying cause. The four cases:
 
 **Flavor A — explicit path provided but file not found / not `.md`** (e.g. user typed `implement T1 from /typo/path.md` or `from scratch`). The user clearly intended PRD-task mode; recommendation steers them toward correcting the path:
-- `question`: "Could not resolve PRD path '<given path>': <reason>. What did you mean?"
+- `question`: "I couldn't open a PRD at '<given path>': <reason>. What did you mean?"
 - `options`:
-  1. **I'll provide the correct path** (Recommended) — "Specify in chat. Will re-enter Step 0a with the new path."
-  2. **List PRDs in canonical search locations** — "Print a plain chat list of `.md` files in `docs/prds/` etc., then re-ask this gate."
-  3. **Switch to standalone mode** — "Abandon PRD-task intent; treat my full $ARGUMENTS as a free-form description."
+  1. **I'll provide the correct path** (Recommended) — "I'll type the right path in chat." (Mechanics: re-enter Step 0a with the new path.)
+  2. **List the PRDs you can find** — "Show me the `.md` files in the usual PRD folders (`docs/prds/` etc.), then ask me this again."
+  3. **Skip the PRD — use my description** — "Forget the PRD; treat everything I typed as a plain feature description."
   4. **Abort** — "Stop /cf-feature."
 
 **Flavor B — inferred mode (no `from <path>`), 0 PRDs match T<N>** (e.g. user typed `implement T7` but no PRD has T7). The user may have intended PRD-task but the inference failed:
-- `question`: "No PRD in canonical locations (`docs/prds/`, `prd/`, etc.) contains a `### T<N> — ` heading for T<N>. What did you mean?"
+- `question`: "None of the PRDs in the usual folders (`docs/prds/`, `prd/`, etc.) has a task T<N>. What did you mean?"
 - `options`:
-  1. **I'll provide the correct path** (Recommended) — "Specify in chat."
-  2. **List all PRDs found in canonical locations** — "Print all PRDs found (regardless of T<N> match), with their available T-IDs; then re-ask this gate."
-  3. **Switch to standalone mode** — "Treat my full $ARGUMENTS as a free-form description."
+  1. **I'll provide the correct path** (Recommended) — "I'll type the PRD's path in chat."
+  2. **List all the PRDs you can find** — "Show me every PRD you find, with the task IDs each one contains, then ask me this again."
+  3. **Skip the PRD — use my description** — "Treat everything I typed as a plain feature description."
   4. **Abort** — "Stop /cf-feature."
 
 **Flavor C — inferred mode, 2-4 PRDs match T<N>** (multiple PRDs each have a T<N> heading). The user needs to pick which PRD:
@@ -533,8 +564,8 @@ This gate's option set changes shape based on the underlying cause. The four cas
 - `header`: `"No roadmap"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Fall back to standalone** (Recommended) — "Treat the PRD as a free-form description; run /cf-feature in standalone mode using the PRD's title + executive summary as the seed."
-  2. **Re-run /cf-prd to add a roadmap** — "Stop /cf-feature. Re-invoke /cf-prd against this PRD to add a roadmap (Q-sessions = Yes), then re-invoke /cf-feature."
+  1. **Use the whole PRD as the request** (Recommended) — "I'll treat the PRD itself as the feature description, starting from its title and summary."
+  2. **Re-run /cf-prd to add a roadmap** — "Stop /cf-feature. Run /cf-prd on this PRD to add a task roadmap, then run /cf-feature again." (Mechanics: /cf-prd with Q-sessions = Yes.)
   3. **Abort** — "Stop /cf-feature."
 
 ### `G-task-missing` (PRD-task mode, task ID not found in PRD, OR duplicate headings, OR empty roadmap)
@@ -550,38 +581,38 @@ This gate has three flavors based on the underlying cause:
   - When >3 tasks exist: options 1-3 are the top-3 by ID (T1, T2, T3 or whichever first three exist with the title as description), option 4 is **Show all tasks (chat)** — "Print the full list of tasks in chat; I'll respond with the right ID via Other." In this case, Abort is reachable via Other: type `abort` (case-insensitive) to abort, or type `T<N>` to pick a specific task — the auto-Other prefix-match interprets the literal task ID.
 
 **Flavor B — duplicate `### T<N> — ` headings (PRD malformed).** Used when the heading count was 2+.
-- `question`: "T<N> appears multiple times in <PRD path> (PRD is malformed — likely a copy-paste artifact). What now?"
+- `question`: "T<N> appears more than once in <PRD path> — probably a copy-paste mistake. What now?"
 - `options`:
-  1. **Open the PRD in chat for hand-fix** (Recommended) — "Print the PRD section with both/all T<N> blocks; user resolves the duplicates manually (rename one to T<N+1>, delete the redundant block, etc.), then re-invokes /cf-feature."
-  2. **Try the first occurrence anyway** — "Use the FIRST T<N> heading encountered. Step 8's Edit may fail because `old_string` won't be unique; surface `G-edit-fail` then."
+  1. **Show me the duplicates to fix by hand** (Recommended) — "Print the section with every T<N> copy; I'll fix it myself (rename one to T<N+1>, delete the extra), then run /cf-feature again."
+  2. **Use the first one anyway** — "Go with the first T<N> and keep going. Marking the task Done at the end may fail because of the duplicate — you'll check with me then." (Mechanics: Step 8's Edit may fail because `old_string` won't be unique; surface `G-edit-fail` then.)
   3. **Pick a different task** — "Tell me which T<X> in chat."
   4. **Abort** — "Stop /cf-feature."
 
 **Flavor C — empty roadmap (no `### T` headings at all).** Used when the `## Implementation roadmap` section exists but has zero task headings.
-- `question`: "The roadmap section in <PRD path> is empty (no `### T` headings). What now?"
+- `question`: "The roadmap section in <PRD path> has no tasks in it. What now?"
 - `options`:
-  1. **Fall back to standalone** (Recommended) — "Treat the PRD as a free-form description; run /cf-feature in standalone mode."
-  2. **Re-run /cf-prd to populate roadmap** — "Stop /cf-feature; re-invoke /cf-prd against this PRD with Q-sessions = Yes to populate the roadmap, then re-invoke /cf-feature."
+  1. **Use the whole PRD as the request** (Recommended) — "I'll treat the PRD itself as the feature description."
+  2. **Re-run /cf-prd to fill in the roadmap** — "Stop /cf-feature. Run /cf-prd on this PRD to fill in the roadmap tasks, then run /cf-feature again." (Mechanics: /cf-prd with Q-sessions = Yes.)
   3. **Abort** — "Stop /cf-feature."
 
 ### `G-step8-confirm` (Step 8 close-out)
-- `question`: "Step 8: mark T<N> ('<title>') as Done in <PRD path>? Planned: `**Status:** Not started → Done`. Next unblocked: <T<M> | 'none (PRD complete)'>. <if cascade-skipped: 'Already-Done (skipped during scan): T<a>, T<b>'.>"
+- `question`: "Mark T<N> ('<title>') as Done in <PRD path>? The edit: `**Status:** Not started → Done`. Next task ready to start: <T<M> | 'none (PRD complete)'>. <if cascade-skipped: 'Already done (skipped): T<a>, T<b>'.>"
 - `header`: `"Close T<N>?"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Yes — update PRD and emit carry-over** (Recommended) — "Apply the Status edit; print the carry-over block (or 'PRD complete' message)."
-  2. **Emit carry-over only** — "Skip the PRD edit; I'll mark Done manually. (Carry-over still emitted.)"
-  3. **Stop here** — "No PRD update, no carry-over."
+  1. **Yes — update the PRD and give me the next command** (Recommended) — "Mark it Done and print the one command to paste into a fresh session for the next task (or a 'PRD complete' note)."
+  2. **Give me the next command only** — "Don't touch the PRD; I'll mark it Done myself. Still print the next-session command."
+  3. **Stop here** — "No PRD update and no next-session command."
 
 ### `G-edit-fail` (Step 8 PRD edit failed)
-- `question`: "Could not apply the Step 8 PRD edit at T<N>. Auto-detected cause: <'heading not found — PRD changed since Step 0a' | 'Status value isn't `Not started` (found: <value>)' | 'duplicate `old_string` match — PRD has copy-paste artifacts' | 'unknown format mismatch'>. What now?"
+- `question`: "I couldn't update T<N>'s status in the PRD. Likely cause: <'the T<N> heading is gone — the PRD changed since we started' | 'the status line isn't `Not started` (found: <value>)' | 'T<N> appears more than once, so the match wasn't unique' | 'the format didn't match for another reason'>. What now?"
 - `header`: `"Edit fail"`
 - `multiSelect`: `false`
 - `options`:
-  1. **Show me the T<N> section as-is** (Recommended) — "Print T<N>'s current content in chat; I'll fix the PRD by hand, then re-run Step 8."
-  2. **Try a relaxed match** — "Risky if the user hand-edited Status intentionally. Implementation sequence: (a) re-read the PRD; (b) locate T<N>'s heading line `### T<N> — <title>`; (c) within the body following that heading (until the next `### ` or `## ` heading), find the first line matching `^\\*\\*Status:\\*\\*\\s+.+$` — call it the 'observed Status line'; (d) construct a NEW Edit call where `old_string` BUNDLES the heading line PLUS the observed Status line (separated by any intervening lines, joined verbatim — i.e. include everything from the heading through the observed Status line so the match is anchored to T<N>); `new_string` is the same bundle but with the observed Status line replaced by `**Status:** Done`; (e) apply the second Edit. If this second Edit also fails (e.g. heading itself no longer matches), surface the error and offer option 3 again."
-  3. **Skip PRD update; emit carry-over anyway** — "Move on; I'll update the PRD by hand later. Carry-over for T<M> still emitted; if user pastes it in a fresh session, drift-watch via the `G-branch-hint` heuristic may still catch the inconsistency."
-  4. **Abort Step 8** — "No PRD update, no carry-over."
+  1. **Show me the T<N> section as-is** (Recommended) — "Print T<N> as it currently reads in chat; I'll fix the PRD by hand, then we retry the update."
+  2. **Try a relaxed match** — "Find T<N>'s status line as it reads right now — whatever it says — and change it to Done. Risky if I edited that status on purpose." (Mechanics: (a) re-read the PRD; (b) locate T<N>'s heading line `### T<N> — <title>`; (c) within the body following that heading (until the next `### ` or `## ` heading), find the first line matching `^\\*\\*Status:\\*\\*\\s+.+$` — call it the 'observed Status line'; (d) construct a NEW Edit call where `old_string` BUNDLES the heading line PLUS the observed Status line (separated by any intervening lines, joined verbatim — i.e. include everything from the heading through the observed Status line so the match is anchored to T<N>); `new_string` is the same bundle but with the observed Status line replaced by `**Status:** Done`; (e) apply the second Edit. If this second Edit also fails (e.g. heading itself no longer matches), surface the error and offer option 3 again.)
+  3. **Skip the PRD update — still give me the next command** — "Move on; I'll fix the PRD by hand later. Still print the command for the next task." (Mechanics: the carry-over for T<M> is still emitted, and Step 8.6's caution line is appended because the PRD was not updated.)
+  4. **Stop here** — "No PRD update and no next-task command."
 
 ## Verification criteria (for the v1.3 multi-session feature itself)
 
@@ -594,7 +625,7 @@ These verifications confirm v1.3 works correctly; run them when validating chang
 - **V-no-roadmap:** invoke `/cf-feature implement T1 from <PRD without roadmap>` — `G-no-roadmap` surfaces.
 - **V-redo:** in test PRD, set T1.Status = Done by hand; invoke `/cf-feature implement T1 from <PRD>` — `G-step0a-redo` surfaces.
 - **V-inferred-ambiguous:** place 2 PRDs in `docs/prds/`, both with T1. Invoke `/cf-feature implement T1` — `G-find-path` surfaces with both as options.
-- **V-cf-prd-multisession:** invoke `/cf-prd` with a multi-session-sized seed, Q-sessions = Yes. Inspect synthesized PRD: `## Implementation roadmap` section exists (not `## Implementation hints`), 2-6 tasks, every task has all 5 fields (no `TBD`), `Next command` line per task, `Depends on` uses comma format or `—`.
+- **V-cf-prd-multisession:** invoke `/cf-prd` with a multi-session-sized seed, Q-sessions = Yes. Inspect synthesized PRD: `## Implementation roadmap` section exists (not `## Implementation hints`), 2-6 tasks, every task has all eight fields (Status, Depends on, In scope, Out of scope, Surfaces touched, Interfaces, Verification, Next command; no `TBD`), `Next command` line per task, `Depends on` uses comma format or `—`.
 - **V-cf-prd-handoff:** invoke `/cf-prd` with Q-sessions = Yes AND Q3 selection includes "Hand off to /cf-feature after". Verify the final handoff line is `Run /cf-feature implement T1 from <PRD path> when ready.` (NOT the generic `<one-line summary>` form). Repeat with Q-sessions = No: existing format should be emitted.
 - **V-verbatim:** in PRD-task mode, verify the design doc's Scope bullets are a superset of T<N>.In scope verbatim (no edits, no reorderings). Allow appended bullets only if explicitly marked "(expanded for this design doc)".
 - **V-branch-hint:** create a branch named `t1-fix` on a repo without any PRD containing T1; invoke `/cf-feature add a button`. `G-branch-hint` should NOT fire (no T1 PRD exists). Then create a PRD with T1 and re-invoke — `G-branch-hint` should fire.

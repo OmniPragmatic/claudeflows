@@ -1,0 +1,5 @@
+:; [ -n "$CLAUDEFLOWS_QUIET" ] && exit 0; [ -f .claudeflows/quiet ] && exit 0; echo "claudeflows: when the user's request matches a flow, announce it and invoke the skill instead of improvising. Bug/regression/failing test: cf-bug. New feature or PRD task: cf-feature. Requirements/PRD: cf-prd. Rough idea to explore: cf-brainstorm. Review the pending diff: cf-precommit-review. Question needing a researched cited answer: cf-question. Trivial edits and directly answerable questions do not need a flow."; exit 0
+@echo off
+if defined CLAUDEFLOWS_QUIET exit /b 0
+if exist .claudeflows\quiet exit /b 0
+echo claudeflows: when the user's request matches a flow, announce it and invoke the skill instead of improvising. Bug/regression/failing test: cf-bug. New feature or PRD task: cf-feature. Requirements/PRD: cf-prd. Rough idea to explore: cf-brainstorm. Review the pending diff: cf-precommit-review. Question needing a researched cited answer: cf-question. Trivial edits and directly answerable questions do not need a flow.
