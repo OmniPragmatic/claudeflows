@@ -3,6 +3,20 @@
 All notable changes to the claudeflows plugin. Versions 1.4.x–1.7.0 were never
 released; their work shipped folded into 1.7.1.
 
+## 1.7.2 — 2026-07-06
+
+### Fixed
+- cf-precommit-review's `argument-hint` frontmatter quoted so it parses as a
+  YAML string (unquoted, the leading `[` made it a flow-sequence). Completes
+  the frontmatter validation fixes for the community marketplace (#2, #3);
+  the cf-prd description parse failure those issues report was fixed in 1.7.1
+  by quoting all six skill descriptions. `claude plugin validate` passes and
+  every frontmatter field parses as a string.
+
+### Removed
+- Superseded internal hardening PRD (the T1–T6 plan) and its references in
+  docs/testing.md.
+
 ## 1.7.1 — 2026-07-06
 
 ### Added

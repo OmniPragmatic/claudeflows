@@ -1,7 +1,7 @@
 ---
 name: cf-precommit-review
 description: "Use when the user asks for a review of pending or uncommitted changes — 'review my changes before I commit', 'sanity-check my diff'. Flow: lint/typecheck/tests as pre-flight, then a fresh Goldfish reviews the diff cold; every finding is fixed or rebutted verbatim, never silently dropped. Not for performing the commit itself or for reviewing an existing GitHub PR; failing tests the user wants fixed go to cf-bug."
-argument-hint: [optional focus area or files to emphasize]
+argument-hint: "[optional focus area or files to emphasize]"
 ---
 
 Run the pre-commit review loop. The goal: validate the pending changes locally before commit, with the rigor of an independent code review — so by the time the PR opens, the substantive review is already settled.

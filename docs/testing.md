@@ -1,12 +1,12 @@
 # Behavioral testing with subagents
 
 The plugin's product is prompts, so its regressions are behavioral, not
-syntactic. The planned `/cf-selfcheck` (hardening PRD T4) will lint grammar —
-marker pairing, sentinel inventory, gate budgets, field-label byte-match — but
-it cannot tell you whether a fresh session actually *follows* a flow. For
-that, run the V-* criteria (listed in `cf-feature/SKILL.md`) as scripted
-scenarios against fresh subagents, adapting the skill-testing methodology from
-obra/superpowers' `writing-skills`.
+syntactic. A mechanical linter can cover grammar — marker pairing, sentinel
+inventory, gate budgets, field-label byte-match — but it cannot tell you
+whether a fresh session actually *follows* a flow. For that, run the V-*
+criteria (listed in `cf-feature/SKILL.md`) as scripted scenarios against
+fresh subagents, adapting the skill-testing methodology from obra/superpowers'
+`writing-skills`.
 
 ## Method
 
@@ -47,6 +47,6 @@ obra/superpowers' `writing-skills`.
 
 ## When to run
 
-Before tagging any release that touches `cf-feature` or `cf-prd`; after the
-T1 reference-file split (re-anchor expectations first); and whenever a
-description or template edit is intended to change routing or gate behavior.
+Before tagging any release that touches `cf-feature` or `cf-prd`, and
+whenever a description or template edit is intended to change routing or
+gate behavior.
