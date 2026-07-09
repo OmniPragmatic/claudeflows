@@ -3,6 +3,28 @@
 All notable changes to the claudeflows plugin. Versions 1.4.x–1.7.0 were never
 released; their work shipped folded into 1.7.1.
 
+## 1.8.0 — 2026-07-09
+
+### Added
+- **Routing modes**: proactive flow invocation is now user-controlled. New
+  `/cf-mode` skill sets `auto` (announce and invoke — the 1.7 behavior),
+  `suggest` (offer the flow in one line, run only on consent — the new
+  default), or `off` (explicit `/cf-*` only). Mode lives in
+  `.claudeflows/mode`; `CLAUDEFLOWS_MODE` env var overrides it; the legacy
+  `.claudeflows/quiet` / `CLAUDEFLOWS_QUIET=1` opt-out maps to `off` when no
+  mode is set.
+
+### Changed
+- 1.7's auto-routing fired too often and had only an all-or-nothing opt-out,
+  because two mechanisms routed independently: imperative "Use when …" skill
+  descriptions and the `SessionStart` hint. The hook is now the single source
+  of routing policy — it emits the active mode's instructions with explicit
+  negative criteria (never route follow-ups inside work in progress, trivial
+  edits, directly answerable questions, or thinking-out-loud). All six skill
+  descriptions were rewritten to be descriptive rather than trigger-shaped;
+  they defer to the routing hint and fall back to explicit-invocation-only
+  when it is absent (so `off` mode really is off).
+
 ## 1.7.2 — 2026-07-06
 
 ### Fixed

@@ -1,6 +1,6 @@
 ---
 name: cf-precommit-review
-description: "Use when the user asks for a review of pending or uncommitted changes — 'review my changes before I commit', 'sanity-check my diff'. Flow: lint/typecheck/tests as pre-flight, then a fresh Goldfish reviews the diff cold; every finding is fixed or rebutted verbatim, never silently dropped. Not for performing the commit itself or for reviewing an existing GitHub PR; failing tests the user wants fixed go to cf-bug."
+description: "Independent review loop for pending or uncommitted changes ('review my changes before I commit', 'sanity-check my diff'). Flow: lint/typecheck/tests as pre-flight, then a fresh Goldfish reviews the diff cold; every finding is fixed or rebutted verbatim, never silently dropped. Not for performing the commit itself or for reviewing an existing GitHub PR; failing tests the user wants fixed go to cf-bug. Proactive use: follow the claudeflows routing-mode hint if present in context; if absent, invoke only on explicit user request."
 argument-hint: "[optional focus area or files to emphasize]"
 ---
 

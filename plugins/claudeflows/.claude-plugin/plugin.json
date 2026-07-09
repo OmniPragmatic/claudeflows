@@ -1,7 +1,7 @@
 {
   "name": "claudeflows",
   "description": "Six reusable workflows for software work with Claude Code, built around the Elephant/Goldfish pattern: a fresh subagent (the Goldfish) stress-tests a problem doc, design doc, or diff while your context-rich session (the Elephant) stays in the loop. Flows: question, brainstorm, PRD, bug, feature, precommit-review.",
-  "version": "1.7.2",
+  "version": "1.8.0",
   "author": {
     "name": "Vlad Shvedov",
     "url": "https://omniprag.com"

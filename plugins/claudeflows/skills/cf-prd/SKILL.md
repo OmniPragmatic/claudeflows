@@ -1,6 +1,6 @@
 ---
 name: cf-prd
-description: "Use when the user roughly knows what to build and wants it specified — a PRD, spec, or requirements doc for a concrete feature or issue ('write a PRD for issue #42', 'spec out the export feature before we build it'). Flow: codebase grounding, structured gap-filling Q&A, deep research, PRD with explicit open questions. Not for open-ended ideation (use cf-brainstorm) or for implementing (use cf-feature)."
+description: "Specification flow for turning a roughly-known feature or issue into a PRD, spec, or requirements doc ('write a PRD for issue #42', 'spec out the export feature before we build it'). Flow: codebase grounding, structured gap-filling Q&A, deep research, PRD with explicit open questions. Open-ended ideation is cf-brainstorm; implementing is cf-feature. Proactive use: follow the claudeflows routing-mode hint if present in context; if absent, invoke only on explicit user request."
 argument-hint: idea or feature description (the PRD's seed)
 ---
 

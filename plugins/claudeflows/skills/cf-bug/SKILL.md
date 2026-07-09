@@ -1,6 +1,6 @@
 ---
 name: cf-bug
-description: "Use when the user wants broken behavior fixed — a bug, crash, error/exception, 5xx, failing or flaky test, regression, 'X stopped working', or a linked bug issue. Flow: problem doc, independent Goldfish diagnosis, failing test before the fix, smallest fix, precommit review; trivial typo/config fixes take a fast path. If the capability never existed use cf-feature; explaining an error without fixing it is cf-question."
+description: "Structured fix flow for broken behavior — a bug, crash, error/exception, 5xx, failing or flaky test, regression, 'X stopped working', or a linked bug issue. Flow: problem doc, independent Goldfish diagnosis, failing test before the fix, smallest fix, precommit review; trivial typo/config fixes take a fast path. A capability that never existed is cf-feature; explaining an error without fixing it is cf-question. Proactive use: follow the claudeflows routing-mode hint if present in context; if absent, invoke only on explicit user request."
 argument-hint: bug description, GitHub issue URL, or symptom + repro
 ---
 

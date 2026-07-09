@@ -1,6 +1,6 @@
 ---
 name: cf-question
-description: "Use when the user wants an evidence-backed answer, not a code change — locating or explaining behavior in this codebase ('where does X live?', 'how does Y work here?'), explaining a concept, or comparing concrete technical options (Redis vs Postgres). Read-only, cited, tightly length-capped (250-400 words by shape), no clarifying prompts. Skip trivial lookups answerable from context, debugging the user wants fixed, and product/strategy direction (use cf-brainstorm)."
+description: "Evidence-backed answer flow, no code change — locating or explaining behavior in this codebase ('where does X live?', 'how does Y work here?'), explaining a concept, or comparing concrete technical options (Redis vs Postgres). Read-only, cited, tightly length-capped (250-400 words by shape), no clarifying prompts. Trivial lookups answerable from context need no flow; debugging the user wants fixed is cf-bug; product/strategy direction is cf-brainstorm. Proactive use: follow the claudeflows routing-mode hint if present in context; if absent, invoke only on explicit user request."
 argument-hint: a question, "how does X work?", "what does Y do?", "should I A or B?"
 ---
 

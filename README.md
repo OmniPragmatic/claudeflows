@@ -46,10 +46,17 @@ Six slash commands become available, all prefixed `/cf-`:
 | `/cf-bug <description \| #issue \| URL>` | Bug fix flow. Problem doc → Goldfish diagnosis check → failing test → fix → precommit review → test gate. |
 | `/cf-feature <description \| #issue \| URL>` | Feature flow. Scope confirm → design doc → three-Goldfish design check (comprehension / critic / readiness) → implement → precommit review → test gate. Also supports `implement T<N> from <PRD path>` for **multi-session PRD-task mode** (1.3+) — load a task from a `/cf-prd`-generated Implementation roadmap, run the full flow, and emit a paste-ready carry-over command for the next session. |
 | `/cf-precommit-review` | Independent reviewer loop on the pending diff. Lint + typecheck + tests as pre-flight, then a fresh subagent reviews the diff cold. |
+| `/cf-mode [auto \| suggest \| off]` | Control how eagerly Claude routes plain-language requests into the flows above (see Routing modes below). No argument shows the current mode. |
 
 Implementation skills (`bug`, `feature`) stop short of committing. You authorize the commit explicitly.
 
-**Auto-routing (1.7+).** The skills are also model-invocable: mention a bug, a feature, or a diff to review in plain words, and Claude announces and invokes the matching `/cf-` flow itself ("I'll use cf-bug for that"). Two mechanisms do the matching — trigger-shaped skill descriptions ("Use when…") and a one-line `SessionStart` routing hint. Typing the slash command still works exactly as before and always wins. Per-repo opt-out: create an empty `.claudeflows/quiet` file in the directory you start Claude from (usually the repo root; add `.claudeflows/` to that repo's `.gitignore` so the marker stays out of `git status`), or set `CLAUDEFLOWS_QUIET=1`, to silence both SessionStart hooks. To pin any skill back to manual-only invocation everywhere, re-add `disable-model-invocation: true` to its SKILL.md frontmatter.
+**Routing modes (1.8+).** The skills are model-invocable, but how eagerly Claude routes plain-language requests into flows is yours to control with `/cf-mode`:
+
+- `suggest` (default) — Claude offers the matching flow in one line ("This looks like a cf-bug case — want the full flow, or a direct fix?") and runs it only if you agree. A decline is not re-offered that session.
+- `auto` — Claude announces and invokes the matching flow itself ("I'll use cf-bug for that") — the 1.7 behavior.
+- `off` — no proactive routing; flows run only when you type `/cf-*`.
+
+The mode is a single word in `.claudeflows/mode` in the directory you start Claude from (add `.claudeflows/` to that repo's `.gitignore` so the marker stays out of `git status`); the `CLAUDEFLOWS_MODE` env var overrides the file, and the legacy `.claudeflows/quiet` / `CLAUDEFLOWS_QUIET=1` opt-out still maps to `off` when no mode is set. The `SessionStart` routing hint carries the active mode's instructions; the skill descriptions defer to it and fall back to explicit-invocation-only when it is absent. Typing a slash command always works regardless of mode, and no mode ever routes follow-up turns inside work in progress, trivial edits, or directly answerable questions. To pin any skill back to manual-only invocation everywhere, re-add `disable-model-invocation: true` to its SKILL.md frontmatter.
 
 Usage examples:
 
@@ -449,7 +456,7 @@ Tested patterns include Rails (with mise + Brakeman + MiniTest), Flutter (with b
 
 ## Compaction resilience (1.7+)
 
-The plugin ships a `SessionStart` hook (matcher: `compact`) that fires right after a context compaction and injects a one-line reminder: if a `/cf-` skill is mid-flight, re-read its SKILL.md before the next step — templates, sentinels, and gate specs must never be reconstructed from memory. Long sessions summarize away the exact wording the flows rely on; the hook restores the discipline mechanically instead of trusting the summary. Both hook scripts are tiny sh/cmd polyglots (Windows-safe, no bash dependency) and honor the `.claudeflows/quiet` / `CLAUDEFLOWS_QUIET=1` opt-out.
+The plugin ships a `SessionStart` hook (matcher: `compact`) that fires right after a context compaction and injects a one-line reminder: if a `/cf-` skill is mid-flight, re-read its SKILL.md before the next step — templates, sentinels, and gate specs must never be reconstructed from memory. Long sessions summarize away the exact wording the flows rely on; the hook restores the discipline mechanically instead of trusting the summary. Both hook scripts are tiny sh/cmd polyglots (Windows-safe, no bash dependency). The routing hint follows the `/cf-mode` setting; the legacy `.claudeflows/quiet` / `CLAUDEFLOWS_QUIET=1` opt-out silences the compaction reminder and, when no explicit mode is set, the routing hint too.
 
 Also since 1.7: `/cf-feature`'s three-Goldfish design check hands the design doc to each pass as a transient file under `.claudeflows/tmp/` (self-git-ignored, cleaned up at flow end) instead of pasting the doc into all three prompts each round — same asymmetry, lower token cost. In-flight flows also keep a small progress ledger in the same directory, so a compaction or crash doesn't lose gate state; the precommit reviewer additionally verifies the diff against the design doc when one exists (spec deviations surface as ordinary findings).
 

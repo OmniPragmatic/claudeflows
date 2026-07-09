@@ -44,6 +44,8 @@ fresh subagents, adapting the skill-testing methodology from obra/superpowers'
 | file handoff (1.7+) | any `/cf-feature` run reaching Step 2 | `.claudeflows/tmp/` exists with `.gitignore` = `*`, design file read by passes, cleaned at flow end |
 | subagent guard (1.7+) | inspect any Goldfish transcript | no Skill-tool invocation by the Goldfish |
 | hooks (1.7+) | new session in a repo with/without `.claudeflows/quiet` | routing hint printed / suppressed |
+| routing modes (1.8+) | new session with `.claudeflows/mode` set to each of `auto` / `suggest` / `off`, and with `CLAUDEFLOWS_MODE` overriding the file | hint carries the matching mode text; `off` prints nothing; env var wins over file |
+| /cf-mode (1.8+) | `/cf-mode` with no arg, a bad arg, and each valid mode | reports current mode / rejects / writes `.claudeflows/mode` and deletes legacy `quiet` |
 
 ## When to run
 

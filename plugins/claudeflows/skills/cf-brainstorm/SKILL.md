@@ -1,6 +1,6 @@
 ---
 name: cf-brainstorm
-description: "Use when the user wants to diverge before committing — a rough or half-formed idea ('I have an app idea but I am not sure what it should be'), an open 'what should we build?' question, or a strategic direction call ('should we pivot to B2B?'). Parallel Goldfish lenses (technical, business, UX, contrarian, market) produce a ranked concepts brief. Once a direction is chosen, requirements go to cf-prd; bounded technical A-vs-B choices go to cf-question."
+description: "Divergence flow for a rough or half-formed idea ('I have an app idea but I am not sure what it should be'), an open 'what should we build?' question, or a strategic direction call ('should we pivot to B2B?'). Parallel Goldfish lenses (technical, business, UX, contrarian, market) produce a ranked concepts brief. Once a direction is chosen, requirements go to cf-prd; bounded technical A-vs-B choices go to cf-question. Proactive use: follow the claudeflows routing-mode hint if present in context; if absent, invoke only on explicit user request."
 argument-hint: rough idea, problem space, or strategic question
 ---
 

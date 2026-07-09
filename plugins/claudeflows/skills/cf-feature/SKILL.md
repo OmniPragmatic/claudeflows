@@ -1,6 +1,6 @@
 ---
 name: cf-feature
-description: "Use when the user asks to build, add, create, or extend a feature or new functionality ('add dark mode', 'let users export CSV'), or to execute a PRD task ('implement T2 from docs/prds/billing.md'). Flow: design doc, three-Goldfish design check behind a hard no-code gate, layered implementation, precommit review, test gate. Restoring broken behavior is cf-bug; writing the spec itself ('build a PRD') is cf-prd; skip trivial one-line additions."
+description: "Structured build flow for a feature or new functionality ('add dark mode', 'let users export CSV'), or for executing a PRD task ('implement T2 from docs/prds/billing.md'). Flow: design doc, three-Goldfish design check behind a hard no-code gate, layered implementation, precommit review, test gate. Restoring broken behavior is cf-bug; writing the spec itself ('build a PRD') is cf-prd; trivial one-line additions need no flow. Proactive use: follow the claudeflows routing-mode hint if present in context; if absent, invoke only on explicit user request."
 argument-hint: feature description (what the user wants and why)
 ---
 
